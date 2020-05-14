@@ -146,7 +146,6 @@ fr:
     with 'Z', STEM_ALL - Search for stemmed forms of all words (note: no 'Z' prefix is added)."
   label_default_notifications: Notifications par défaut du document
   heading_uploaded_files: Document(s) transmis
-  submit_commit: Appliquer
   link_documents: Documents
   permission_view_dmsf_file_revision_accesses: Voir les téléchargements dans le flux d'activité
   permission_view_dmsf_file_revisions: Voir les révisions dans le flux d'activité
@@ -397,7 +396,8 @@ fr:
   text_dmsf_fast_links_info: You will be able to manually enter a target folder's ID when creating links in order to speed
     up the process of creating links.
 
-  label_inherited_permissions: Inherited permissions
+  label_dmsf_permissions: Prohibit Access for
+  label_inherited_permissions: Inherited Access for
 
   button_edit_content: Edit content
   field_workflow: Workflow
@@ -407,6 +407,8 @@ fr:
   field_first_at: First
   field_last_at: Last
   field_size: Size
+
+  label_add_width: Add with
 
   easy_pages:
     modules:

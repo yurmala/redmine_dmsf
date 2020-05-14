@@ -146,7 +146,6 @@ cs:
     slovech (prefix 'Z' není přidán)"
   label_default_notifications: Výchozí notifikace pro soubory
   heading_uploaded_files: Nahrané soubory
-  submit_commit: Potvrdit
   link_documents: Dokumenty
   permission_view_dmsf_file_revision_accesses: View downloads in Activity stream
   permission_view_dmsf_file_revisions: View revisions in Activity stream
@@ -397,7 +396,8 @@ cs:
   text_dmsf_fast_links_info: Při vytváření odkazů budete moci zadat přímo ID cílového adresáře za účelem zrychlení
     procesu vytváření odkazů.
 
-  label_inherited_permissions: Zděděná práva
+  label_dmsf_permissions: Vyhrazený přístup pro
+  label_inherited_permissions: Zděděný přístup pro
 
   button_edit_content: Upravit obsah
   field_workflow: Workflow
@@ -407,6 +407,8 @@ cs:
   field_first_at: První
   field_last_at: Poslední
   field_size: Velikost
+
+  label_add_width: Přidat s
 
   easy_pages:
     modules:
