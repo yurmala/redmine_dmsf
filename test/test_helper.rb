@@ -27,3 +27,4 @@ require File.expand_path('../../../../test/test_helper', __FILE__)
 require_relative 'test_case'
 require_relative 'integration_test'
 require_relative 'unit_test'
+require_relative 'helper_test'

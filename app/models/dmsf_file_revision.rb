@@ -55,18 +55,18 @@ class DmsfFileRevision < ActiveRecord::Base
   scope :deleted, -> { where(deleted: STATUS_DELETED) }
 
   acts_as_customizable
-  acts_as_event :title => Proc.new {|o| (o.source_dmsf_file_revision_id.present? ? "#{l(:label_dmsf_updated)}" : "#{l(:label_created)}") +
+  acts_as_event title: Proc.new {|o| (o.source_dmsf_file_revision_id.present? ? "#{l(:label_dmsf_updated)}" : "#{l(:label_created)}") +
                                           ": #{o.dmsf_file.dmsf_path_str}"},
-    :url => Proc.new {|o| {:controller => 'dmsf_files', :action => 'show', :id => o.dmsf_file}},
-    :datetime => Proc.new {|o| o.updated_at },
-    :description => Proc.new { |o| "#{o.description}\n#{o.comment}" },
-    :author => Proc.new {|o| o.user }
+    url: Proc.new { |o| { controller: 'dmsf_files', action: 'show', id: o.dmsf_file } },
+    datetime: Proc.new {|o| o.updated_at },
+    description: Proc.new { |o| "#{o.description}\n#{o.comment}" },
+    author: Proc.new { |o| o.user }
 
-  acts_as_activity_provider :type => 'dmsf_file_revisions',
-    :timestamp => "#{DmsfFileRevision.table_name}.updated_at",
-    :author_key => "#{DmsfFileRevision.table_name}.user_id",
-    :permission => :view_dmsf_file_revisions,
-    :scope => DmsfFileRevision.joins(:dmsf_file).
+  acts_as_activity_provider type: 'dmsf_file_revisions',
+    timestamp: "#{DmsfFileRevision.table_name}.updated_at",
+    author_key: "#{DmsfFileRevision.table_name}.user_id",
+    permission: :view_dmsf_file_revisions,
+    scope: DmsfFileRevision.joins(:dmsf_file).
       joins("JOIN #{Project.table_name} ON #{Project.table_name}.id = #{DmsfFile.table_name}.project_id").visible
 
   validates :title, presence: true
@@ -75,6 +75,7 @@ class DmsfFileRevision < ActiveRecord::Base
   validates :dmsf_file, presence: true
   validates :name, dmsf_file_name: true
   validates :description, length: { maximum: 1.kilobyte }
+  validates :size, dmsf_max_file_size: true
 
   def project
     dmsf_file.project if dmsf_file
@@ -92,8 +93,8 @@ class DmsfFileRevision < ActiveRecord::Base
     remove_extension(filename).gsub(/_+/, ' ');
   end
  
-  def self.easy_activity_custom_project_scope(scope, options, event_type)
-    scope.where(:dmsf_files => { project_id: options[:project_ids] })
+  def self.easy_activity_custom_project_scope(scope, options, _)
+    scope.where(dmsf_files: { project_id: options[:project_ids] })
   end
 
   def delete(commit = false, force = true)
@@ -142,27 +143,18 @@ class DmsfFileRevision < ActiveRecord::Base
     super
   end
 
-  # In a static call, we find the first matched record on base object type and
-  # then run the access_grouped call against it
-  def self.access_grouped(revision_id)
-    DmsfFileRevision.find(revision_id).first.access_grouped
-  end
-
-  # Get grouped data from dmsf_file_revision_access about file interactions
-  # - 22-06-2012 - Rather than calling a static, we should use the access
-  #   (has_many) to re-run a query - it makes more sense then executing
-  #   custom SQL into a temporary object
-  #
-  def access_grouped
-    dmsf_file_revision_access.select('user_id, COUNT(*) AS count, MIN(created_at) AS first_at, MAX(created_at) AS last_at').group('user_id')
-  end
-
   def version
-    ver = DmsfUploadHelper::gui_version(major_version).to_s
-    if -minor_version != ' '.ord
-      ver << ".#{DmsfUploadHelper::gui_version(minor_version)}"
+    DmsfFileRevision.version major_version, minor_version
+  end
+
+  def self.version(major_version, minor_version)
+    if major_version && minor_version
+      ver = DmsfUploadHelper::gui_version(major_version).to_s
+      if -minor_version != ' '.ord
+        ver << ".#{DmsfUploadHelper::gui_version(minor_version)}"
+      end
+      ver
     end
-    ver
   end
   
   def storage_base_path
@@ -191,7 +183,7 @@ class DmsfFileRevision < ActiveRecord::Base
   end
 
   def new_storage_filename
-    raise DmsfAccessError, 'File id is not set' unless dmsf_file.id
+    raise DmsfAccessError, 'File id is not set' unless dmsf_file&.id
     filename = DmsfHelper.sanitize_filename(name)
     timestamp = DateTime.current.strftime('%y%m%d%H%M%S')
     while File.exist?(storage_base_path.join("#{timestamp}_#{dmsf_file.id}_#{filename}"))
@@ -283,11 +275,19 @@ class DmsfFileRevision < ActiveRecord::Base
   end
 
   def copy_file_content(open_file)
+    sha = Digest::SHA256.new
     File.open(disk_file(false), 'wb') do |f|
-      while (buffer = open_file.read(8192))
-        f.write(buffer)
+      if open_file.respond_to?(:read)
+        while (buffer = open_file.read(8192))
+          f.write buffer
+          sha.update buffer
+        end
+      else
+        f.write open_file
+        sha.update open_file
       end
     end
+    self.digest = sha.hexdigest
   end
 
   # Overrides Redmine::Acts::Customizable::InstanceMethods#available_custom_fields
@@ -319,17 +319,13 @@ class DmsfFileRevision < ActiveRecord::Base
     format2
   end
 
-  def self.create_digest(path)
+  def create_digest
     begin
-      Digest::SHA256.file(path).hexdigest
+      self.digest = Digest::SHA256.file(path).hexdigest
     rescue => e
       Rails.logger.error e.message
-      0
+      self.digest = 0
     end
-  end
-
-  def create_digest
-    self.digest = DmsfFileRevision.create_digest(disk_file)
   end
 
   # Returns either MD5 or SHA256 depending on the way self.digest was computed
@@ -364,7 +360,7 @@ class DmsfFileRevision < ActiveRecord::Base
           end
         when DmsfWorkflow::STATE_APPROVED, DmsfWorkflow::STATE_REJECTED
           action = DmsfWorkflowStepAction.joins(:dmsf_workflow_step_assignment).where(
-            :dmsf_workflow_step_assignments => { :dmsf_file_revision_id => id }).order(
+            dmsf_workflow_step_assignments: { dmsf_file_revision_id: id }).order(
             'dmsf_workflow_step_actions.created_at').last
           tooltip << action.author.name if action
       end

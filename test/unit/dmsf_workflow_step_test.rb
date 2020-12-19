@@ -22,10 +22,10 @@
 require File.expand_path('../../test_helper', __FILE__)
 
 class DmsfWorkflowStepTest < RedmineDmsf::Test::UnitTest
+
   include Redmine::I18n
   
-  fixtures :users, :email_addresses, :dmsf_workflows, :dmsf_workflow_steps, 
-    :dmsf_file_revisions
+  fixtures :dmsf_workflows, :dmsf_workflow_steps, :dmsf_folders, :dmsf_files, :dmsf_file_revisions
 
   def setup 
     @wfs1 = DmsfWorkflowStep.find 1
@@ -35,16 +35,7 @@ class DmsfWorkflowStepTest < RedmineDmsf::Test::UnitTest
     @revision2 = DmsfFileRevision.find 2
     @wf2 = DmsfWorkflow.find 2
   end
-  
-  def test_truth
-    assert_kind_of DmsfWorkflowStep, @wfs1
-    assert_kind_of DmsfWorkflowStep, @wfs2
-    assert_kind_of DmsfWorkflowStep, @wfs5
-    assert_kind_of DmsfFileRevision, @revision1
-    assert_kind_of DmsfFileRevision, @revision2
-    assert_kind_of DmsfWorkflow, @wf2
-  end
-  
+
   def test_create
     wfs = DmsfWorkflowStep.new
     wfs.dmsf_workflow_id = 1

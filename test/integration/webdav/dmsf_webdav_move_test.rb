@@ -25,56 +25,7 @@ require 'fileutils'
 
 class DmsfWebdavMoveTest < RedmineDmsf::Test::IntegrationTest
 
-  fixtures :projects, :users, :email_addresses, :members, :member_roles, :roles,
-    :enabled_modules, :dmsf_folders, :dmsf_files, :dmsf_file_revisions
-    
-  def setup
-    @dmsf_storage_directory = Setting.plugin_redmine_dmsf['dmsf_storage_directory']
-    Setting.plugin_redmine_dmsf['dmsf_storage_directory'] = 'files/dmsf'
-    FileUtils.cp_r File.join(File.expand_path('../../../fixtures/files', __FILE__), '.'), DmsfFile.storage_path
-    @admin = credentials 'admin'
-    @jsmith = credentials 'jsmith'
-    @jsmith_user = User.find_by(login: 'jsmith')
-    @admin_user = User.find_by(login: 'admin')
-    @project1 = Project.find 1
-    @file1 = DmsfFile.find 1
-    @file10 = DmsfFile.find 10
-    @folder1 = DmsfFolder.find 1
-    # Fix permissions for jsmith's role
-    @role = Role.find 1 #
-    @role.add_permission! :view_dmsf_folders
-    @role.add_permission! :folder_manipulation
-    @dmsf_webdav = Setting.plugin_redmine_dmsf['dmsf_webdav']
-    Setting.plugin_redmine_dmsf['dmsf_webdav'] = true
-    @dmsf_webdav_strategy = Setting.plugin_redmine_dmsf['dmsf_webdav_strategy']
-    Setting.plugin_redmine_dmsf['dmsf_webdav_strategy'] = 'WEBDAV_READ_WRITE'
-    @dmsf_webdav_use_project_names = Setting.plugin_redmine_dmsf['dmsf_webdav_use_project_names']
-    Setting.plugin_redmine_dmsf['dmsf_webdav_use_project_names'] = false
-    super
-  end
-
-  def teardown
-    # Delete our tmp folder
-    begin
-      FileUtils.rm_rf DmsfFile.storage_path
-    rescue => e
-      error e.message
-    end
-    Setting.plugin_redmine_dmsf['dmsf_storage_directory'] = @dmsf_storage_directory
-    Setting.plugin_redmine_dmsf['dmsf_webdav'] = @dmsf_webdav
-    Setting.plugin_redmine_dmsf['dmsf_webdav_strategy'] = @dmsf_webdav_strategy
-    Setting.plugin_redmine_dmsf['dmsf_webdav_use_project_names'] = @dmsf_webdav_use_project_names
-  end
-
-  def test_truth
-    assert_kind_of Project, @project1
-    assert_kind_of Role, @role
-    assert_kind_of DmsfFile, @file1
-    assert_kind_of DmsfFile, @file10
-    assert_kind_of DmsfFolder, @folder1
-    assert_kind_of User, @jsmith_user
-    assert_kind_of User, @admin_user
-  end
+  fixtures :dmsf_folders, :dmsf_files, :dmsf_file_revisions
 
   def test_move_denied_for_anonymous
     new_name = "#{@file1.name}.moved"
@@ -85,8 +36,8 @@ class DmsfWebdavMoveTest < RedmineDmsf::Test::IntegrationTest
     end
   end
 
-  def test_move_to_new_filename_without_folder_manipulation_permission
-    @role.remove_permission! :folder_manipulation
+  def test_move_to_new_filename_without_file_manipulation_permission
+    @role.remove_permission! :file_manipulation
     new_name = "#{@file1.name}.moved"
     assert_no_difference '@file1.dmsf_file_revisions.count' do
       process :move, "/dmsf/webdav/#{@project1.identifier}/#{@file1.name}", params: nil,
@@ -95,8 +46,8 @@ class DmsfWebdavMoveTest < RedmineDmsf::Test::IntegrationTest
     end
   end
 
-  def test_move_to_new_filename_without_folder_manipulation_permission_as_admin
-    @role.remove_permission! :folder_manipulation
+  def test_move_to_new_filename_without_file_manipulation_permission_as_admin
+    @role.remove_permission! :file_manipulation
     new_name = "#{@file1.name}.moved"
     assert_difference '@file1.dmsf_file_revisions.count', +1 do
       process :move, "/dmsf/webdav/#{@project1.identifier}/#{@file1.name}", params: nil,
@@ -105,6 +56,37 @@ class DmsfWebdavMoveTest < RedmineDmsf::Test::IntegrationTest
       f = DmsfFile.find_file_by_name @project1, nil, "#{new_name}"
       assert f, "Moved file '#{new_name}' not found in project."
     end
+  end
+
+  def test_without_folder_manipulation_permission
+    @role.remove_permission! :folder_manipulation
+    new_name = "#{@folder1.title}.moved"
+    process :move, "/dmsf/webdav/#{@project1.identifier}/#{@folder1.title}", params: nil,
+            headers: @jsmith.merge!({ destination: "http://www.example.com/dmsf/webdav/#{@project1.identifier}/#{new_name}" })
+    assert_response :forbidden
+  end
+
+  def test_without_folder_manipulation_permission_as_admin
+    @role.remove_permission! :folder_manipulation
+    new_name = "#{@folder1.title}.moved"
+    process :move, "/dmsf/webdav/#{@project1.identifier}/#{@folder1.title}", params: nil,
+            headers: @admin.merge!({ destination: "http://www.example.com/dmsf/webdav/#{@project1.identifier}/#{new_name}" })
+    assert_response :created
+  end
+
+  def test_move_folder_to_another_project
+      process :move, "/dmsf/webdav/#{@project1.identifier}/#{@folder1.title}", params: nil,
+        headers: @admin.merge!({ destination: "http://www.example.com/dmsf/webdav/#{@project2.identifier}/#{@folder1.title}" })
+      assert_response :created
+      @folder1.dmsf_folders.each do |d|
+        assert_equal @project2, d.project
+      end
+      @folder1.dmsf_files.each do |f|
+        assert_equal @project2, f.project
+      end
+      @folder1.dmsf_links.each do |l|
+        assert_equal @project2, l.project
+      end
   end
 
   def test_move_non_existent_file
@@ -126,7 +108,7 @@ class DmsfWebdavMoveTest < RedmineDmsf::Test::IntegrationTest
 
   def test_move_to_new_filename_with_project_names
     Setting.plugin_redmine_dmsf['dmsf_webdav_use_project_names'] = true
-    project1_uri = Addressable::URI.escape(RedmineDmsf::Webdav::ProjectResource.create_project_name(@project1))
+    project1_uri = ERB::Util.url_encode(RedmineDmsf::Webdav::ProjectResource.create_project_name(@project1))
     new_name = "#{@file1.name}.moved"
     assert_difference '@file1.dmsf_file_revisions.count', +1 do
       process :move, "/dmsf/webdav/#{project1_uri}/#{@file1.name}", params: nil,
@@ -161,7 +143,7 @@ class DmsfWebdavMoveTest < RedmineDmsf::Test::IntegrationTest
 
   def test_move_to_new_folder_with_project_names
     Setting.plugin_redmine_dmsf['dmsf_webdav_use_project_names'] = true
-    project1_uri = Addressable::URI.escape(RedmineDmsf::Webdav::ProjectResource.create_project_name(@project1))
+    project1_uri = ERB::Util.url_encode(RedmineDmsf::Webdav::ProjectResource.create_project_name(@project1))
     assert_difference '@file1.dmsf_file_revisions.count', +1 do
       process :move, "/dmsf/webdav/#{project1_uri}/#{@file1.name}", params: nil,
         headers: @jsmith.merge!({
@@ -192,7 +174,7 @@ class DmsfWebdavMoveTest < RedmineDmsf::Test::IntegrationTest
         process :move, "/dmsf/webdav/#{@project1.identifier}/#{@file1.name}", params: nil,
           headers: @jsmith.merge!({
             destination: "http://www.example.com/dmsf/webdav/#{@project1.identifier}/#{new_name}"})
-        assert_response :not_implemented # NotImplemented
+        assert_response :not_implemented
       end
     end
   end
@@ -242,7 +224,7 @@ class DmsfWebdavMoveTest < RedmineDmsf::Test::IntegrationTest
       assert_response :success # Created
     end
   end
-  
+
   def test_move_msoffice_save_locked_file
     # When some versions of MsOffice save a file they use the following sequence:
     # 1. Save changes to a new temporary document, XXX.tmp
@@ -312,5 +294,39 @@ class DmsfWebdavMoveTest < RedmineDmsf::Test::IntegrationTest
       assert_response :success # Created
     end
   end
-  
+
+  def test_move_file_in_subproject
+    assert_difference '@file12.dmsf_file_revisions.count', +1 do
+      process :move, "/dmsf/webdav/#{@project1.identifier}/#{@project3.identifier}/#{@file12.name}", params: nil,
+        headers: @admin.merge!({
+          destination: "http://www.example.com/dmsf/webdav/#{@project1.identifier}/#{@project3.identifier}/new_file_name" })
+      assert_response :created
+    end
+  end
+
+  def test_move_folder_in_subproject
+    process :move, "/dmsf/webdav/#{@project1.identifier}/#{@project3.identifier}/#{@folder10.title}", params: nil,
+      headers: @admin.merge!({
+        destination: "http://www.example.com/dmsf/webdav/#{@project1.identifier}/#{@project3.identifier}/new_folder_name" })
+    assert_response :created
+    @folder10.reload
+    assert_equal 'new_folder_name', @folder10.title
+  end
+
+  def test_move_folder_in_subproject_to_the_same_name_as_subproject
+    process :move, "/dmsf/webdav/#{@project1.identifier}/#{@project3.identifier}/#{@folder10.title}", params: nil,
+      headers: @admin.merge!({
+        destination: "http://www.example.com/dmsf/webdav/#{@project1.identifier}/#{@project3.identifier}/#{@project3.identifier}" })
+    assert_response :created
+    @folder10.reload
+    assert_equal @project3.identifier, @folder10.title
+  end
+
+  def test_move_subproject
+    process :move, "/dmsf/webdav/#{@project1.identifier}/#{@project3.identifier}", params: nil,
+      headers: @admin.merge!({
+        destination: "http://www.example.com/dmsf/webdav/#{@project1.identifier}/new_project_name" })
+    assert_response :method_not_allowed
+  end
+
 end

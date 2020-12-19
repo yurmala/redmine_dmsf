@@ -40,7 +40,6 @@ zh:
   error_folder_creation_failed: 文件夹创建失败
   error_folder_title_must_be_entered: 请输入主题
   notice_folder_deleted: 文件夹已删除
-  error_folder_is_not_empty: 非空文件夹
   error_folder_title_is_already_used: 标题已经被使用
   notice_folder_details_were_saved: 文件夹详细信息已保存
   error_folder_is_locked: 資料夾己經鎖定
@@ -67,7 +66,6 @@ zh:
   notice_file_notifications_deactivated: 文件通知注销
   link_details: "%{title} 详情"
   link_edit: "编辑 %{title}"
-  submit_create: 创建
   link_create_folder: 创建文件夹
   link_title: 主题
   link_size: 大小
@@ -77,12 +75,10 @@ zh:
   title_check_for_zip_download_or_email: 选中用于zip下载或邮件发送
   title_check_for_restore_or_delete: Check for restore or delete
 
-  title_delete: 删除
   title_notifications_active_deactivate: "通知有效：点击注销通知"
   title_notifications_not_active_activate: "通知无效:点击激活通知"
   title_title_version_version_download: " 下载‘%{title}’版本‘%{version}’"
   title_locked_by_user: "%{user}锁定"
-  title_locked_by_you: 您锁定
   title_waiting_for_approval: 待批准
   title_approved: 已批准
   title_unlock_file: 解除锁定允许其他成员修改
@@ -129,9 +125,6 @@ zh:
   option_version_major: Major
   option_version_custom: Custom
   label_new_content: 新内容
-  label_maximum_files_upload: 最大上传文件数
-  note_maximum_number_of_files_uploaded: 一次上传的最大文件数量. 0表示无限制.
-
   label_maximum_files_download: 最大下载文件数
   note_maximum_number_of_files_downloaded: 最大文件下载数量(zip或发送电子邮件方式). 0表示无限制.
 
@@ -151,7 +144,6 @@ zh:
     with 'Z', STEM_ALL - Search for stemmed forms of all words (note: no 'Z' prefix is added)."
   label_default_notifications: 文件默认通知
   heading_uploaded_files: 上传文件
-  submit_commit: 提交
   link_documents: 文档
   permission_view_dmsf_file_revision_accesses: View downloads in Activity stream
   permission_view_dmsf_file_revisions: View revisions in Activity stream
@@ -248,7 +240,6 @@ zh:
   label_dmsf_workflow_plural_num: Approval workflows (%{count})
   label_dmsf_workflow_step: Step
   label_dmsf_workflow_step_plural: Steps
-  label_dmsf_workflow_approval: Approval
   label_dmsf_workflow_approval_plural: Approvals
   label_dmsf_wokflow_action_approve: Approve
   label_dmsf_wokflow_action_reject: Reject
@@ -344,18 +335,10 @@ zh:
   error_lock_exclusively: Unable to lock exclusively an already-locked resource
   error_unlock_parent_locked: Unlock failed - resource parent is locked
 
-  field_dmsf_tree_view: Navigate folders in a tree
   label_dmsf_version: 版本
 
   locked_documents: Locked documents
   open_approvals: Open approvals
-
-  label_maximum_ajax_upload_filesize: Maximum file size uploadable via AJAX
-  note_maximum_ajax_upload_filesize: Limits maximum file size that can uploaded via standard AJAX interface otherwise
-    Redmine standard upload form must be used. Number is in MB.
-
-  label_classic: Classic
-  label_drag_drop: Modern
 
   error_maximum_upload_filecount: "No more than %{filecount} file(s) can be uploaded."
 
@@ -411,7 +394,22 @@ zh:
   text_dmsf_fast_links_info: You will be able to manually enter a target folder's ID when creating links in order to speed
     up the process of creating links.
 
-  label_inherited_permissions: Inherited permissions
+  label_dmsf_permissions: Allow access only to
+  label_inherited_permissions: Inherited Access for
+
+  button_edit_content: Edit content
+  field_workflow: Workflow
+  field_modified: Date
+  field_updated: Date
+  field_count: D/L
+  field_first_at: First
+  field_last_at: Last
+  field_size: Size
+
+  label_add_width: Add with
+
+  dmsf_webdav_ignore_1b_file_for_authentication: Ignore 1b file sent for authentication
+  dmsf_webdav_ignore_1b_file_for_authentication_info: Total Commander WebDAV plugin
 
   easy_pages:
     modules:

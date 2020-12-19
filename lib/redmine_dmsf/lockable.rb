@@ -52,7 +52,7 @@ module RedmineDmsf
         if (existing[0].lock_scope == :scope_shared) && (scope == :scope_shared)
           # RFC states if an item is exclusively locked and another lock is attempted we reject
           # if the item is shared locked however, we can always add another lock to it
-          if self.folder.locked?
+          if self.dmsf_folder.locked?
             raise DmsfLockError.new(l(:error_parent_locked))
           else
             existing.each do |l|
@@ -74,6 +74,7 @@ module RedmineDmsf
       l.save!
       reload
       locks.reload
+      l.reload
       l
     end
 
@@ -109,7 +110,7 @@ module RedmineDmsf
     def unlock!(force_file_unlock_allowed = false)
       raise DmsfLockError.new(l(:warning_file_not_locked)) unless self.locked?
       existing = self.lock(true)
-      if existing.empty? || (!self.dmsf_folder.nil? && self.dmsf_folder.locked?) #If its empty its a folder thats locked (not root)
+      if existing.empty? || (!self.dmsf_folder.nil? && self.dmsf_folder.locked?) # If its empty its a folder that's locked (not root)
         raise DmsfLockError.new(l(:error_unlock_parent_locked))
       else
         # If entity is locked to you, you aren't the lock originator (or named in a shared lock) so deny action

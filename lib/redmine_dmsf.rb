@@ -27,8 +27,10 @@ DMSF_MAX_NOTIFICATION_RECEIVERS_INFO = 10
 
 # Validators
 require_dependency File.dirname(__FILE__) + '/../app/validators/dmsf_file_name_validator'
+require_dependency File.dirname(__FILE__) + '/../app/validators/dmsf_max_file_size_validator'
 require_dependency File.dirname(__FILE__) + '/../app/validators/dmsf_workflow_name_validator'
 require_dependency File.dirname(__FILE__) + '/../app/validators/dmsf_url_validator'
+require_dependency File.dirname(__FILE__) + '/../app/validators/dmsf_folder_parent_validator'
 
 # Plugin's patches
 require 'redmine_dmsf/patches/projects_helper_patch'
@@ -37,6 +39,7 @@ require 'redmine_dmsf/patches/user_preference_patch'
 require 'redmine_dmsf/patches/user_patch'
 require 'redmine_dmsf/patches/issue_patch'
 require 'redmine_dmsf/patches/role_patch'
+require 'redmine_dmsf/patches/queries_controller_patch'
 
 if defined?(EasyExtensions)
   require 'redmine_dmsf/patches/easy_crm_case_patch'
@@ -66,7 +69,6 @@ require 'redmine_dmsf/hooks/controllers/search_controller_hooks'
 require 'redmine_dmsf/hooks/controllers/issues_controller_hooks'
 require 'redmine_dmsf/hooks/views/view_projects_form_hook'
 require 'redmine_dmsf/hooks/views/base_view_hooks'
-require 'redmine_dmsf/hooks/views/my_account_view_hooks'
 require 'redmine_dmsf/hooks/views/issue_view_hooks'
 require 'redmine_dmsf/hooks/views/custom_field_view_hooks'
 require 'redmine_dmsf/hooks/views/search_view_hooks'

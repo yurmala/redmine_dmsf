@@ -43,7 +43,7 @@ class Dmsf144 < ActiveRecord::Migration[4.2]
     #               data into it, which should enable us to run checks we need, not as
     #               efficient, however compatible across the board.
     DmsfFileLock.reset_column_information
-    DmsfFileLock.select('MAX(id), id').order('MAX(id) DESC').group(:dmsf_file_id, :id).find do |lock|
+    DmsfFileLock.select('MAX(id), id').order(Arel.sql('MAX(id) DESC')).group(:dmsf_file_id, :id).find do |lock|
       lock.reload 
       if lock.locked
         do_not_delete << lock.id
@@ -86,7 +86,7 @@ class Dmsf144 < ActiveRecord::Migration[4.2]
             # Ensure the project path exists
             project_directory = File.dirname(new_path)
             Dir.mkdir(project_directory) unless File.directory? project_directory
-            FileUtils.mv(existing, new_path)
+            FileUtils.mv existing, new_path
             say "Migration: #{existing} -> #{new_path} succeeded"
           end
         rescue #Here we wrap around IO in the loop to prevent one failure ruining complete run.
@@ -131,7 +131,7 @@ class Dmsf144 < ActiveRecord::Migration[4.2]
             rev.save!
             new_path = DmsfFile.storage_path.join(rev.disk_filename)
           end
-          FileUtils.mv(existing, new_path)
+          FileUtils.mv existing, new_path
         end
       end
     rescue

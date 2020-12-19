@@ -23,17 +23,12 @@ require File.expand_path('../../test_helper', __FILE__)
 
 class WorkflowStepAssignmentTest < RedmineDmsf::Test::UnitTest
   
-  fixtures :users, :email_addresses, :dmsf_file_revisions, :dmsf_workflow_steps, 
-    :dmsf_workflow_step_assignments
+  fixtures :dmsf_workflow_steps, :dmsf_workflow_step_assignments, :dmsf_folders, :dmsf_files,
+           :dmsf_file_revisions
   
   def setup
     @wfsa1 = DmsfWorkflowStepAssignment.find 1
     @wfsa2 = DmsfWorkflowStepAssignment.find 2
-  end
-  
-  def test_truth
-    assert_kind_of DmsfWorkflowStepAssignment, @wfsa1
-    assert_kind_of DmsfWorkflowStepAssignment, @wfsa2
   end
   
   def test_create

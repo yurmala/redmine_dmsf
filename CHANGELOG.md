@@ -1,6 +1,66 @@
 Changelog for Redmine DMSF
 ==========================
 
+2.4.5 *2020-11-10*
+------------------
+
+* Bug: #1184 - Problems uploading files with the same file name as attachments on Redmine issues
+* Bug: #1183 - Update README.md
+* Bug: #1179 - Can not make file or folder which have the same name as the project's root folder, and etc.
+* New: #1178 - Failed to PUT files which includes some characters via WebDAV
+* Bug: #1175 - Available in CSV Internal Error
+* Bug: #1172 - Manually locking document disables "Edit content"
+* Bug: #1170 - Max size of upload-able file
+* Bug: #1166 - Version column in documents table can't display letters
+* Bug: #1165 - DMSF 2.4.4 1 byte files issue
+* New: #1164 - Embed video into wiki
+* Bug: #1163 - Folder visible via webdav but not via UI
+* Bug: #1159 - Approval workflow log not available for non-admin users
+* Bug: #1156 - Editing a document also changes its title
+* Bug: #1155 - Fix easy context menu
+* Bug: #1150 - Uploading big files causes no memory exception
+* New: #1145 - Folder can not be deleted if the folder contains files or folders
+* New: #1136 - WebDAV tree structure including sub-projects duplicate
+* New: #1023 - New UI: List view improvements
+* New: #1122 - New UI: Custom fields as filters
+* Bug: #1088 - Webdav link contains SUB-URI part twice
+* New: #460 - Webdav: Parent-sub Project Folders Seperated
+
+2.4.4 *2020-07-10*
+------------------
+
+    Maintenance release
+
+* New: #1144 - Who has locked the document information is missing.
+* Bug: #1142 - How to configure "Direct document or document link sending via email"?
+
+2.4.3 *2020-06-12*
+------------------
+
+    Redmine's look&feel 
+    Implementation of folders movement between projects (WebDAV)
+    Korean localization updated
+    
+
+* New: #1129 - New UI: Optimize Actions Menu
+* New: #1128 - New German translations
+* New: #1127 - Help integrating new feature - Auto-update word files with dmsf revision
+* Bug: #1125 - New UI: Question concerning the new filtering options
+* Bug: #1121 - New UI: Saving Query -> Internal Server Error
+* Bug: #1120 - New UI: Values of custom fields not visible
+* New: #1119 - Button "New folder" maybe must be replaced nearly button "New file" (UI better solution)
+* New: #1115 - Ruby 2.3 compatibility
+* New: #1112 - Update ru.yml
+* Bug: #1110 - Error redmine 4.1.1 after devel-2.4.3 dmsf upgrade
+* Bug: #1106 - Status 404 after moving the folder to another project
+* New: #1100 - Update Korean translation
+* Bug: #1095 - Public URL date cannot be set in Chromium based browsers
+* New: #1084 - Update Korean translation
+* New: #1080 - Redmine look and feel
+* Bug: #1075 - DMSF main page not opening for a few users (Error 500)
+* New: #236  - Documents tagging
+* New: #29   - Improve/AJAXify DMSF browsing UI
+
 2.4.2 *2020-01-21*
 ------------------
 

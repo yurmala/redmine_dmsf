@@ -40,7 +40,6 @@ it: # Italian strings thx 2 Matteo Arceci!
   error_folder_creation_failed: Creazione cartella fallita
   error_folder_title_must_be_entered: Deve essere inserito il titolo
   notice_folder_deleted: Cartella cancellata
-  error_folder_is_not_empty: La cartella non è vuota
   error_folder_title_is_already_used: Il titolo è già in uso
   notice_folder_details_were_saved: I dettagli della cartella sono stati salvati  
   error_folder_is_locked: La cartella è bloccata
@@ -67,7 +66,6 @@ it: # Italian strings thx 2 Matteo Arceci!
   notice_file_notifications_deactivated: La notifica su documento è disattiva
   link_details: "%{title} dettagli"
   link_edit: "Modifica %{title}"
-  submit_create: Creato
   link_create_folder: Creata cartella
   link_title: Nome documento
   link_size: Dimensioni
@@ -77,12 +75,10 @@ it: # Italian strings thx 2 Matteo Arceci!
   title_check_for_zip_download_or_email: Seleziona per zip, download o email
   title_check_for_restore_or_delete: Seleziona per ripristinare o cancellare
 
-  title_delete: Cancella
   title_notifications_active_deactivate: "Notifiche attive: Disattiva"
   title_notifications_not_active_activate: "Notifiche disattivate: Attiva"
   title_title_version_version_download: "%{title} versione %{version} download"
   title_locked_by_user: "Bloccato da %{user}"
-  title_locked_by_you: Bloccato da te
   title_waiting_for_approval: In attesa di Approvazione
   title_approved: Approvato
   title_unlock_file: Sblocca per consentire modifiche degli altri membri
@@ -129,9 +125,6 @@ it: # Italian strings thx 2 Matteo Arceci!
   option_version_major: Maggiore
   option_version_custom: Personalizzata
   label_new_content: Nuovo contenuto
-  label_maximum_files_upload: Limite di caricamento
-  note_maximum_number_of_files_uploaded: Limita il numero massimo di documenti caricati alla volta. 0 significa senza
-    limiti.
   label_maximum_files_download: Numero massimo di documenti scaricabili
   note_maximum_number_of_files_downloaded: Limita il numero massimo di documenti scaricabili in archivio zip o spediti
     via email. 0 significa senza limiti.
@@ -151,7 +144,6 @@ it: # Italian strings thx 2 Matteo Arceci!
     with 'Z', STEM_ALL - Search for stemmed forms of all words (note: no 'Z' prefix is added)."
   label_default_notifications: Notifica di default dei documenti
   heading_uploaded_files: Documenti caricati
-  submit_commit: Invia/Salva
   link_documents: Documenti
   permission_view_dmsf_file_revision_accesses: Visualizza i download nel flusso di attività
   permission_view_dmsf_file_revisions: Visualizza le revisioni nel flusso di attività
@@ -248,7 +240,6 @@ it: # Italian strings thx 2 Matteo Arceci!
   label_dmsf_workflow_plural_num: Approvazioni flusso di lavoro (%{count})
   label_dmsf_workflow_step: Passo
   label_dmsf_workflow_step_plural: Passi
-  label_dmsf_workflow_approval: Approvazione
   label_dmsf_workflow_approval_plural: Approvazioni
   label_dmsf_wokflow_action_approve: Approva
   label_dmsf_wokflow_action_reject: Rifiuta
@@ -344,18 +335,10 @@ it: # Italian strings thx 2 Matteo Arceci!
   error_lock_exclusively: impossibile bloccare in modo esclusivo una risorsa già bloccata
   error_unlock_parent_locked: Sblocco fallito - la risorsa superiore è bloccata
 
-  field_dmsf_tree_view: Navigate folders in a tree
   label_dmsf_version: Version
 
   locked_documents: Documenti bloccati
   open_approvals: Approvazioni aperte
-
-  label_maximum_ajax_upload_filesize: Dimensione massima dei documenti caricabili tramite AJAX
-  note_maximum_ajax_upload_filesize: Limita la dimensione massima dei documenti che possono essere caricati tramite
-    interfaccia standard AJAX altrimenti sarà necessario utilizzare il modulo standard di Redmine. Il numero è espresso
-      in MB.
-  label_classic: Classic
-  label_drag_drop: Modern
 
   error_maximum_upload_filecount: "No more than %{filecount} file(s) can be uploaded."
 
@@ -411,7 +394,22 @@ it: # Italian strings thx 2 Matteo Arceci!
   text_dmsf_fast_links_info: You will be able to manually enter a target folder's ID when creating links in order to speed
     up the process of creating links.
 
-  label_inherited_permissions: Inherited permissions
+  label_dmsf_permissions: Allow access only to
+  label_inherited_permissions: Inherited Access for
+
+  button_edit_content: Edit content
+  field_workflow: Workflow
+  field_modified: Date
+  field_updated: Date
+  field_count: D/L
+  field_first_at: First
+  field_last_at: Last
+  field_size: Size
+
+  label_add_width: Add with
+
+  dmsf_webdav_ignore_1b_file_for_authentication: Ignore 1b file sent for authentication
+  dmsf_webdav_ignore_1b_file_for_authentication_info: Total Commander WebDAV plugin
 
   easy_pages:
     modules:

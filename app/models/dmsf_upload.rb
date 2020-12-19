@@ -35,22 +35,24 @@ class DmsfUpload
   attr_accessor :workflow
   attr_accessor :custom_values
   attr_accessor :tempfile_path
+  attr_accessor :digest
 
   def disk_file
     DmsfHelper.temp_dir.join(disk_filename).to_s
   end
 
   def self.create_from_uploaded_attachment(project, folder, uploaded_file)
-    a = Attachment.find_by_token(uploaded_file[:token])
+    a = Attachment.find_by_token(uploaded_file[:token]) if uploaded_file[:token].present?
     if a
       uploaded = {
-        :disk_filename => DmsfHelper.temp_filename(a.filename),
-        :content_type => a.content_type,
-        :original_filename => a.filename,
-        :comment => uploaded_file[:description],
-        :tempfile_path => a.diskfile
+        disk_filename: DmsfHelper.temp_filename(a.filename),
+        content_type: a.content_type,
+        original_filename: a.filename,
+        comment: uploaded_file[:description],
+        tempfile_path: a.diskfile,
+        digest: a.digest
       }
-      DmsfUpload.new(project, folder, uploaded)
+      DmsfUpload.new project, folder, uploaded
     else
       Rails.logger.error "An attachment not found by its token: #{uploaded_file[:token]}"
       nil
@@ -74,6 +76,7 @@ class DmsfUpload
       Rails.logger.error "Cannot find #{uploaded[:tempfile_path]}"
     end
     @tempfile_path = uploaded[:tempfile_path]
+    @digest = uploaded[:digest]
 
     if file.nil? || file.last_revision.nil?
       @title = DmsfFileRevision.filename_to_title(@name)
@@ -104,7 +107,7 @@ class DmsfUpload
       present_custom_fields = file.last_revision.custom_values.collect(&:custom_field).uniq
       file.last_revision.available_custom_fields.each do |cf|
         unless present_custom_fields.include?(cf)
-          @custom_values << CustomValue.new({:custom_field => cf, :value => cf.default_value}) if cf.default_value
+          @custom_values << CustomValue.new({ custom_field: cf, value: cf.default_value}) if cf.default_value
         end
       end
     end

@@ -40,7 +40,6 @@ hu:
   error_folder_creation_failed: Mappa létrehozása nem sikerült
   error_folder_title_must_be_entered: Cím beírása kötelező
   notice_folder_deleted: Mappa törlésre került
-  error_folder_is_not_empty: Mappa nem üres
   error_folder_title_is_already_used: A címet már használják
   notice_folder_details_were_saved: Mappa részleteit mentésre kerültek
   error_folder_is_locked: Mappa zárolva
@@ -67,7 +66,6 @@ hu:
   notice_file_notifications_deactivated: Fájl értesítések kikapcsolva
   link_details: "%{title} részletek"
   link_edit: "%{title} szerkesztése"
-  submit_create: Létrehozás
   link_create_folder: Mappa létrehozása
   link_title: Cím
   link_size: Méret
@@ -77,12 +75,10 @@ hu:
   title_check_for_zip_download_or_email: Kijelölés tömörítésre, letöltésre vagy email-ben küldésre
   title_check_for_restore_or_delete: Kijelölés visszaállításra vagy törlésre tömörítésre, letöltésre vagy email-ben
     küldésre
-  title_delete: Törlés
   title_notifications_active_deactivate: "Értesítések bekapcsolva: Kikapcsolás"
   title_notifications_not_active_activate: "Értesítések nincsnek bekapcsolva: Bekapcsolás"
   title_title_version_version_download: "%{title} verzió %{version} letöltés"
   title_locked_by_user: "Zárolva %{user}"
-  title_locked_by_you: Ön zárolta
   title_waiting_for_approval: Elfogadásra vár
   title_approved: Elfogadva
   title_unlock_file: Zárolás megszüntetése, hogy más felhasználók is változtatni tudjanak
@@ -129,9 +125,6 @@ hu:
   option_version_major: Fő
   option_version_custom: Egyedi
   label_new_content: Új tartalom
-  label_maximum_files_upload: Maximum feltölthető fájlok
-  note_maximum_number_of_files_uploaded: Egyszerre feltölthető fájlok maximum száma. 0 korlátlan fájlfeltöltést jelent.
-
   label_maximum_files_download: Maximálisan feltölthető fájlok
   note_maximum_number_of_files_downloaded: Maximálisan letölthető zip fájlok, vagy emailek. 0 korlátlan letöltést
     jelent.
@@ -151,7 +144,6 @@ hu:
     with 'Z', STEM_ALL - Search for stemmed forms of all words (note: no 'Z' prefix is added)."
   label_default_notifications: Fájl alapértelmezett értesítések
   heading_uploaded_files: Feltöltött fájlok
-  submit_commit: Beíratás (commit)
   link_documents: Dokumentumok
   permission_view_dmsf_file_revision_accesses: Letöltések megjelenítése a tevékenységi listában
   permission_view_dmsf_file_revisions: Verziók megjelenítése a tevékenységi listában
@@ -248,7 +240,6 @@ hu:
   label_dmsf_workflow_plural_num: "Jóváhagyási workflow-k (%{count})"
   label_dmsf_workflow_step: Lépés
   label_dmsf_workflow_step_plural: Lépések
-  label_dmsf_workflow_approval: Jóváhagyás
   label_dmsf_workflow_approval_plural: Jóváhagyások
   label_dmsf_wokflow_action_approve: Jóváhagyás
   label_dmsf_wokflow_action_assign: Jóváhagyási workflow hozzárendelése
@@ -344,19 +335,10 @@ hu:
   error_lock_exclusively: Nem lehetséges kivételként zárolni egy már zárolt erőforrást
   error_unlock_parent_locked: Feloldás sikertelen - szülő erőforrás zárolva
 
-  field_dmsf_tree_view: Mappák közötti navigálás fastruktúrában
   label_dmsf_version: Verzió
 
   locked_documents: Locked documents
   open_approvals: Nyitott jóváhagyások
-
-  label_maximum_ajax_upload_filesize: Maximum méretű fájl feltöltése AJAX-on keresztül lehetésges
-  note_maximum_ajax_upload_filesize: Korlározza a maximális fájlméretet, amelyet a hagyományos AJAX interfészen
-    keresztül lehet feltölteni. Egyéb esetben a szoftver a saját feltöltő űrlapját használja. A szám MB-ben értendő.
-      számára csak olvasható vagy írható-olvasható webdav felületről
-
-  label_classic: Klasszikus
-  label_drag_drop: Drag&Drop
 
   error_maximum_upload_filecount: "Nem több, mint %{filecount} fájl tölthető fel."
 
@@ -411,7 +393,22 @@ hu:
   text_dmsf_fast_links_info: You will be able to manually enter a target folder's ID when creating links in order to speed
     up the process of creating links.
 
-  label_inherited_permissions: Inherited permissions
+  label_dmsf_permissions: Allow access only to
+  label_inherited_permissions: Inherited Access for
+
+  button_edit_content: Edit content
+  field_workflow: Workflow
+  field_modified: Date
+  field_updated: Date
+  field_count: D/L
+  field_first_at: First
+  field_last_at: Last
+  field_size: Size
+
+  label_add_width: Add with
+
+  dmsf_webdav_ignore_1b_file_for_authentication: Ignore 1b file sent for authentication
+  dmsf_webdav_ignore_1b_file_for_authentication_info: Total Commander WebDAV plugin
 
   easy_pages:
     modules:

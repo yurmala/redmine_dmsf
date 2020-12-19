@@ -40,7 +40,6 @@ en:
   error_folder_creation_failed: Folder creation failed
   error_folder_title_must_be_entered: Title must be entered
   notice_folder_deleted: Folder deleted
-  error_folder_is_not_empty: Folder is not empty
   error_folder_title_is_already_used: Title is already used
   notice_folder_details_were_saved: Folder details were saved
   error_folder_is_locked: Folder is locked
@@ -67,7 +66,6 @@ en:
   notice_file_notifications_deactivated: File notifications deactivated
   link_details: "%{title} details"
   link_edit: "Edit %{title}"
-  submit_create: Create
   link_create_folder: Create folder
   link_title: Title
   link_size: Size
@@ -77,12 +75,10 @@ en:
   title_check_for_zip_download_or_email: Check for zip, download or email
   title_check_for_restore_or_delete: Check for restore or delete
 
-  title_delete: Delete
   title_notifications_active_deactivate: "Notifications active: Deactivate"
   title_notifications_not_active_activate: "Notifications not active: Activate"
   title_title_version_version_download: "%{title} version %{version} download"
   title_locked_by_user: "Locked by %{user}"
-  title_locked_by_you: Locked by you
   title_waiting_for_approval: Waiting for Approval
   title_approved: Approved
   title_unlock_file: Unlock to allow changes for other members
@@ -129,9 +125,6 @@ en:
   option_version_major: Major
   option_version_custom: Custom
   label_new_content: New content
-  label_maximum_files_upload: Maximum files upload
-  note_maximum_number_of_files_uploaded: Limits maximum number of files uploaded at once. 0 means unlimited.
-
   label_maximum_files_download: Maximum files download
   note_maximum_number_of_files_downloaded: Limits maximum number of files downloaded in zip or sent via email. 0 means
     unlimited.
@@ -151,7 +144,6 @@ en:
     with 'Z', STEM_ALL - Search for stemmed forms of all words (note: no 'Z' prefix is added)."
   label_default_notifications: File default notifications
   heading_uploaded_files: Uploaded Files
-  submit_commit: Commit
   link_documents: Documents
   permission_view_dmsf_file_revision_accesses: View downloads in Activity stream
   permission_view_dmsf_file_revisions: View revisions in Activity stream
@@ -248,7 +240,6 @@ en:
   label_dmsf_workflow_plural_num: Approval workflows (%{count})
   label_dmsf_workflow_step: Step
   label_dmsf_workflow_step_plural: Steps
-  label_dmsf_workflow_approval: Approval
   label_dmsf_workflow_approval_plural: Approvals
   label_dmsf_wokflow_action_approve: Approve
   label_dmsf_wokflow_action_reject: Reject
@@ -344,18 +335,10 @@ en:
   error_lock_exclusively: Unable to lock exclusively an already-locked resource
   error_unlock_parent_locked: Unlock failed - resource parent is locked
 
-  field_dmsf_tree_view: Navigate folders in a tree
   label_dmsf_version: Version
 
   locked_documents: Locked documents
   open_approvals: Open approvals
-
-  label_maximum_ajax_upload_filesize: Maximum file size uploadable via AJAX
-  note_maximum_ajax_upload_filesize: Limits maximum file size that can uploaded via standard AJAX interface otherwise
-    Redmine standard upload form must be used. Number is in MB.
-
-  label_classic: Classic
-  label_drag_drop: Modern
 
   error_maximum_upload_filecount: "No more than %{filecount} file(s) can be uploaded."
 
@@ -380,8 +363,8 @@ en:
   note_global: (global)
   field_dmsf_not_inheritable: Not inheritable
   
-  label_webdav_use_project_names: Use project name for project folder
-  note_webdav_use_project_names: Use project names instead of project identifier for project folders.
+  label_webdav_use_project_names: Use project names for project folders
+  note_webdav_use_project_names: Use project names instead of project identifiers for project folders.
 
   label_last_approver: Last approver
 
@@ -411,7 +394,22 @@ en:
   text_dmsf_fast_links_info: You will be able to manually enter a target folder's ID when creating links in order to speed
     up the process of creating links.
 
-  label_inherited_permissions: Inherited permissions
+  label_dmsf_permissions: Allow access only to
+  label_inherited_permissions: Inherited Access for
+
+  button_edit_content: Edit content
+  field_workflow: Workflow
+  field_modified: Date
+  field_updated: Date
+  field_count: D/L
+  field_first_at: First
+  field_last_at: Last
+  field_size: Size
+
+  label_add_width: Add with
+
+  dmsf_webdav_ignore_1b_file_for_authentication: Ignore 1b file sent for authentication
+  dmsf_webdav_ignore_1b_file_for_authentication_info: Total Commander WebDAV plugin
 
   easy_pages:
     modules:

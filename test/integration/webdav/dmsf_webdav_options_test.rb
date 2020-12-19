@@ -24,32 +24,7 @@ require File.expand_path('../../../test_helper', __FILE__)
 
 class DmsfWebdavOptionsTest < RedmineDmsf::Test::IntegrationTest
 
-  fixtures :projects, :users, :email_addresses, :members, :member_roles, :roles, 
-    :enabled_modules, :dmsf_folders
-
-  def setup
-    @admin = credentials 'admin'
-    @jsmith = credentials 'jsmith'
-    @project1 = Project.find 1
-    @project2 = Project.find 2
-    @dmsf_webdav = Setting.plugin_redmine_dmsf['dmsf_webdav']
-    Setting.plugin_redmine_dmsf['dmsf_webdav'] = true
-    @dmsf_webdav_strategy = Setting.plugin_redmine_dmsf['dmsf_webdav_strategy']
-    Setting.plugin_redmine_dmsf['dmsf_webdav_strategy'] = 'WEBDAV_READ_WRITE'
-    @dmsf_webdav_use_project_names = Setting.plugin_redmine_dmsf['dmsf_webdav_use_project_names']
-    Setting.plugin_redmine_dmsf['dmsf_webdav_use_project_names'] = false
-  end
-
-  def teardown
-    Setting.plugin_redmine_dmsf['dmsf_webdav'] = @dmsf_webdav
-    Setting.plugin_redmine_dmsf['dmsf_webdav_strategy'] = @dmsf_webdav_strategy
-    Setting.plugin_redmine_dmsf['dmsf_webdav_use_project_names'] = @dmsf_webdav_use_project_names
-  end
-  
-  def test_truth
-    assert_kind_of Project, @project1
-    assert_kind_of Project, @project2
-  end
+  fixtures :dmsf_folders
 
   def test_options_requires_no_authentication_for_root_level
     process :options, '/dmsf/webdav'
@@ -116,7 +91,7 @@ class DmsfWebdavOptionsTest < RedmineDmsf::Test::IntegrationTest
   end
 
   def test_authenticated_options_returns_expected_allow_header
-    process :options, "/dmsf/webdav/#{@project1.identifier}", :params => nil, :headers => @jsmith
+    process :options, "/dmsf/webdav/#{@project1.identifier}", params: nil, headers: @jsmith
     assert_response :success
     assert !(response.headers.nil? || response.headers.empty?), 'Response headers are empty'
     assert response.headers['Allow'], 'Allow header is empty or does not exist'
@@ -125,14 +100,14 @@ class DmsfWebdavOptionsTest < RedmineDmsf::Test::IntegrationTest
   end
 
   def test_authenticated_options_returns_expected_dav_header
-    process :options, "/dmsf/webdav/#{@project1.identifier}", :params => nil, :headers => @jsmith
+    process :options, "/dmsf/webdav/#{@project1.identifier}", params: nil, headers: @jsmith
     assert_response :success
     assert !(response.headers.nil? || response.headers.empty?), 'Response headers are empty'
     assert response.headers['Dav'], 'Dav header is empty or does not exist'
   end
 
   def test_authenticated_options_returns_expected_ms_auth_via_header
-    process :options, "/dmsf/webdav/#{@project1.identifier}", :params => nil, :headers => @jsmith
+    process :options, "/dmsf/webdav/#{@project1.identifier}", params: nil, headers: @jsmith
     assert_response :success
     assert !(response.headers.nil? || response.headers.empty?), 'Response headers are empty'
     assert response.headers['Ms-Author-Via'], 'Ms-Author-Via header is empty or does not exist'
@@ -140,41 +115,33 @@ class DmsfWebdavOptionsTest < RedmineDmsf::Test::IntegrationTest
   end
 
   def test_un_authenticated_options_for_msoffice_user_agent
-    process :options, "/dmsf/webdav/#{@project1.identifier}", :params => nil, :headers => {:HTTP_USER_AGENT => 'Microsoft Office Word 2014'}
+    process :options, "/dmsf/webdav/#{@project1.identifier}", params: nil, headers: { HTTP_USER_AGENT: 'Microsoft Office Word 2014' }
     assert_response :unauthorized
   end
 
   def test_authenticated_options_for_msoffice_user_agent
-    process :options, "/dmsf/webdav/#{@project1.identifier}", :params => nil,
-                      :headers => @admin.merge!({:HTTP_USER_AGENT => 'Microsoft Office Word 2014'})
+    process :options, "/dmsf/webdav/#{@project1.identifier}", params: nil,
+                      headers: @admin.merge!({ HTTP_USER_AGENT: 'Microsoft Office Word 2014' })
     assert_response :success
   end
 
   def test_un_authenticated_options_for_other_user_agent
-    process :options, "/dmsf/webdav/#{@project1.identifier}", :params => nil, :headers => {:HTTP_USER_AGENT => 'Other'}
+    process :options, "/dmsf/webdav/#{@project1.identifier}", params: nil, headers: { HTTP_USER_AGENT: 'Other' }
     assert_response :unauthorized
   end
 
   def test_authenticated_options_for_other_user_agent
-    process :options, "/dmsf/webdav/#{@project1.identifier}", :params => nil, :headers => @admin.merge!({:HTTP_USER_AGENT => 'Other'})
+    process :options, "/dmsf/webdav/#{@project1.identifier}", params: nil, headers: @admin.merge!({ HTTP_USER_AGENT: 'Other' })
     assert_response :success
-    Setting.plugin_redmine_dmsf['dmsf_webdav_use_project_names'] = true
-    project1_uri = Addressable::URI.escape(RedmineDmsf::Webdav::ProjectResource.create_project_name(@project1))
-    process :options, "/dmsf/webdav/#{@project1.identifier}", :params => nil, :headers => @admin.merge!({:HTTP_USER_AGENT => 'Other'})
-    assert_response :not_found
-    process :options, "/dmsf/webdav/#{project1_uri}", :params => nil, :headers => @admin.merge!({:HTTP_USER_AGENT => 'Other'})
+
+    project1_uri = ERB::Util.url_encode(RedmineDmsf::Webdav::ProjectResource.create_project_name(@project1))
+    process :options, "/dmsf/webdav/#{project1_uri}", params: nil, headers: @admin.merge!({ HTTP_USER_AGENT: 'Other' })
     assert_response :success
   end
 
-  def test_authenticated_options_returns_404_for_non_dmsf_enabled_items
-    @project2.disable_module! :dmsf
-    process :options, "/dmsf/webdav/#{@project2.identifier}", :params => nil, :headers => @jsmith
-    assert_response :not_found
-  end
-
-  def test_authenticated_options_returns_404_for_not_found
-    process :options, '/dmsf/webdav/does-not-exist', :params => nil, :headers => @jsmith
-    assert_response :not_found
+  def test_options_for_subproject
+    process :options, "/dmsf/webdav/#{@project1.identifier}/#{@project3.identifier}", params: nil, headers: @admin
+    assert_response :success
   end
 
 end

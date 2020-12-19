@@ -23,60 +23,35 @@
 require File.expand_path('../../test_helper', __FILE__)
 
 class DmsfFolderTest < RedmineDmsf::Test::UnitTest
-  fixtures :projects, :users, :email_addresses, :dmsf_folders, :roles, :members, :member_roles,
-           :dmsf_folder_permissions
-         
+
+  fixtures :dmsf_folder_permissions, :dmsf_locks, :dmsf_folders, :dmsf_files, :dmsf_file_revisions,
+    :dmsf_links
+
   def setup
-    @project = Project.find 1
-    @project.enable_module! :dmsf
-    @folder1 = DmsfFolder.find 1
-    @folder2 = DmsfFolder.find 2
-    @folder4 = DmsfFolder.find 4
-    @folder5 = DmsfFolder.find 5
-    @folder6 = DmsfFolder.find 6
-    @folder7 = DmsfFolder.find 7
-    @manager = User.find 2
-    @developer = User.find 3
-    @manager_role = Role.find 1
-    @manager_role.add_permission! :view_dmsf_folders
-    developer_role = Role.find 2
-    developer_role.add_permission! :view_dmsf_folders
-    User.current = @manager
+    super
+    @link2 = DmsfLink.find 2
   end
-
-  def test_truth
-    assert_kind_of DmsfFolder, @folder1
-    assert_kind_of DmsfFolder, @folder1
-    assert_kind_of DmsfFolder, @folder4
-    assert_kind_of DmsfFolder, @folder5
-    assert_kind_of DmsfFolder, @folder6
-    assert_kind_of DmsfFolder, @folder7
-    assert_kind_of Project, @project
-    assert_kind_of User, @manager
-    assert_kind_of User, @developer
-    assert_kind_of Role, @manager_role
-  end
-
+         
   def test_visiblity
     # The role has got permissions
-    User.current = @manager
-    assert_equal 7, DmsfFolder.where(project_id: 1).all.size
-    assert_equal 5, DmsfFolder.visible.where(project_id: 1).all.size
+    User.current = @jsmith
+    assert_equal 7, DmsfFolder.where(project_id: @project1.id).all.size
+    assert_equal 5, DmsfFolder.visible.where(project_id: @project1.id).all.size
     # The user has got permissions
-    User.current = @developer
+    User.current = @dlopper
     # Hasn't got permissions for @folder7
-    @folder7.dmsf_folder_permissions.where(:object_type => 'User').delete_all
-    assert_equal 4, DmsfFolder.visible.where(project_id: 1).all.size
+    @folder7.dmsf_folder_permissions.where(object_type: 'User').delete_all
+    assert_equal 4, DmsfFolder.visible.where(project_id: @project1.id).all.size
     # Anonymous user
     User.current = User.anonymous
-    @project.add_default_member User.anonymous
-    assert_equal 5, DmsfFolder.visible.where(project_id: 1).all.size
+    @project1.add_default_member User.anonymous
+    assert_equal 5, DmsfFolder.visible.where(project_id: @project1.id).all.size
   end
 
   def test_permissions
-    User.current = @developer
+    User.current = @dlopper
     assert DmsfFolder.permissions?(@folder7)
-    @folder7.dmsf_folder_permissions.where(:object_type => 'User').delete_all
+    @folder7.dmsf_folder_permissions.where(object_type: 'User').delete_all
     @folder7.reload
     assert !DmsfFolder.permissions?(@folder7)
   end
@@ -86,6 +61,16 @@ class DmsfFolderTest < RedmineDmsf::Test::UnitTest
     assert @folder6.deleted?, "Folder #{@folder6} hasn't been deleted"
   end
 
+  def test_delete_recursively
+    assert @folder1.delete(false), @folder1.errors.full_messages.to_sentence
+    # First&second level
+    [@folder1, @folder2].each do |folder|
+      assert_equal folder.dmsf_folders.all.size, folder.dmsf_folders.collect(&:deleted?).size
+      assert_equal folder.dmsf_files.all.size, folder.dmsf_files.collect(&:deleted?).size
+      assert_equal folder.dmsf_links.all.size, folder.dmsf_links.collect(&:deleted?).size
+    end
+  end
+
   def test_restore
     assert @folder6.delete(false), @folder6.errors.full_messages.to_sentence
     assert @folder6.deleted?, "Folder #{@folder6} hasn't been deleted"
@@ -93,9 +78,37 @@ class DmsfFolderTest < RedmineDmsf::Test::UnitTest
     assert !@folder6.deleted?, "Folder #{@folder6} hasn't been restored"
   end
 
+  def test_restore_recursively
+    # Delete
+    assert @folder1.delete(false), @folder1.errors.full_messages.to_sentence
+    # Restore
+    assert @folder1.restore, @folder1.errors.full_messages.to_sentence
+    assert !@folder1.deleted?, "Folder #{@folder1} hasn't been restored"
+    # First level
+    assert !@folder2.deleted?, "Folder #{@folder2} hasn't been restored"
+    assert !@link2.deleted?, "Link #{@link2} hasn't been restored"
+    # Second level
+    assert !@file4.deleted?, "File #{@file4} hasn't been restored"
+  end
+
   def test_destroy
+    folder6_id = @folder6.id
     @folder6.delete true
-    assert_nil DmsfFolder.find_by(id: @folder6.id)
+    assert_nil DmsfFolder.find_by(id: folder6_id)
+  end
+
+  def test_destroy_recursively
+    folder1_id = @folder1.id
+    folder2_id = @folder2.id
+    link2_id = @link2.id
+    file4_id = @file4.id
+    @folder1.delete true
+    assert_nil DmsfFolder.find_by(id: folder1_id)
+    # First level
+    assert_nil DmsfFolder.find_by(id: folder2_id)
+    assert_nil DmsfLink.find_by(id: link2_id)
+    # Second level
+    assert_nil DmsfFile.find_by(id: file4_id)
   end
 
   def test_is_column_on_default
@@ -116,71 +129,74 @@ class DmsfFolderTest < RedmineDmsf::Test::UnitTest
     # 1 - id
     assert_nil DmsfFolder.get_column_position('id'), "The column 'id' is on?"
     # 2 - title
-    assert_equal DmsfFolder.get_column_position('title'), 1, "The expected position of the 'title' column is 2"
-    # 3 - extension
-    assert_nil DmsfFolder.get_column_position('extensions'), "The column 'extensions' is on?"
-    # 4 - size
-    assert_equal DmsfFolder.get_column_position('size'), 2, "The expected position of the 'size' column is 4"
-    # 5 - modified
-    assert_equal DmsfFolder.get_column_position('modified'), 3, "The expected position of the 'modified' column is 5"
-    # 6 - version
-    assert_equal DmsfFolder.get_column_position('version'), 4, "The expected position of the 'version' column is 6"
-    # 7 - workflow
-    assert_equal DmsfFolder.get_column_position('workflow'), 5, "The expected position of the 'workflow' column is 7"
-    # 8 - author
-    assert_equal DmsfFolder.get_column_position('author'), 6, "The expected position of the 'workflow' column is 8"
-    # 9 - custom fields
+    assert_equal DmsfFolder.get_column_position('title'), 1, "The expected position of the 'title' column is 1"
+    # 3 - size
+    assert_equal DmsfFolder.get_column_position('size'), 2, "The expected position of the 'size' column is 2"
+    # 4 - modified
+    assert_equal DmsfFolder.get_column_position('modified'), 3, "The expected position of the 'modified' column is 3"
+    # 5 - version
+    assert_equal DmsfFolder.get_column_position('version'), 4, "The expected position of the 'version' column is 4"
+    # 6 - workflow
+    assert_equal DmsfFolder.get_column_position('workflow'), 5, "The expected position of the 'workflow' column is 5"
+    # 7 - author
+    assert_equal DmsfFolder.get_column_position('author'), 6, "The expected position of the 'workflow' column is 6"
+    # 8 - custom fields
     assert_nil DmsfFolder.get_column_position('Tag'), "The column 'Tag' is on?"
-    # 10- commands
-    assert_equal DmsfFolder.get_column_position('commands'), 7, "The expected position of the 'commands' column is 10"
-    # 11- (position)
-    assert_equal DmsfFolder.get_column_position('position'), 8, "The expected position of the 'position' column is 11"
-    # 12- (size)
+    # 9 - commands
+    assert_equal DmsfFolder.get_column_position('commands'), 7, "The expected position of the 'commands' column is 7"
+    # 10 - position
+    assert_equal DmsfFolder.get_column_position('position'), 8, "The expected position of the 'position' column is 8"
+    # 11 - size
     assert_equal DmsfFolder.get_column_position('size_calculated'), 9,
-                 "The expected position of the 'size_calculated' column is 12"
-    # 13- (modified)
+                 "The expected position of the 'size_calculated' column is 9"
+    # 12 - modified
     assert_equal DmsfFolder.get_column_position('modified_calculated'), 10,
-                 "The expected position of the 'modified_calculated' column is 13"
-    # 14- (version)
+                 "The expected position of the 'modified_calculated' column is 10"
+    # 13 - version
     assert_equal DmsfFolder.get_column_position('version_calculated'), 11,
-                 "The expected position of the 'version_calculated' column is 14"
-  end
-
-  def test_to_csv
-    columns = %w(id title)
-    csv = @folder4.to_csv(columns, 0)
-    assert_equal 2, csv.size
+                 "The expected position of the 'version_calculated' column is 11"
   end
 
   def test_directory_tree
-    tree = DmsfFolder.directory_tree(@project)
+    User.current = @admin
+    @folder7.lock!
+    User.current = @jsmith
+    assert @folder7.locked_for_user?
+    tree = DmsfFolder.directory_tree(@project1)
     assert tree
     # [["Documents", nil],
-    #  ["...folder7", 7],
     #  ["...folder1", 1],
-    #  ["......folder2", 2] - locked
+    #  ["......folder2", 2]
+    #  [".........folder5", 5],
     #  ["...folder6", 6]]
-    assert tree.to_s.include?('...folder1'), "'...folder3' string in the folder tree expected."
-    assert !tree.to_s.include?('......folder2'), "'......folder2' string in the folder tree not expected."
+    #  ["...folder7", 7] - locked
+    assert tree.to_s.include?('...folder1'), "'...folder1' string in the folder tree expected."
+    assert !tree.to_s.include?('...folder7'), "'...folder7' string in the folder tree not expected."
   end
 
   def test_directory_tree_id
-    tree = DmsfFolder.directory_tree(@project.id)
+    User.current = @admin
+    @folder7.lock!
+    User.current = @jsmith
+    assert @folder7.locked_for_user?
+    tree = DmsfFolder.directory_tree(@project1.id)
     assert tree
     # [["Documents", nil],
-    #  ["...folder7", 7],
     #  ["...folder1", 1],
-    #  ["......folder2", 2] - locked
+    #  ["......folder2", 2]
+    #  [".........folder5", 5],
     #  ["...folder6", 6]]
-    assert tree.to_s.include?('...folder1'), "'...folder3' string in the folder tree expected."
-    assert !tree.to_s.include?('......folder2'), "'......folder2' string in the folder tree not expected."
+    #  ["...folder7", 7] - locked
+    assert tree.to_s.include?('...folder1'), "'...folder1' string in the folder tree expected."
+    assert !tree.to_s.include?('...folder7'), "'...folder7' string in the folder tree not expected."
   end
 
   def test_folder_tree
+    User.current = @admin
     tree = @folder1.folder_tree
     assert tree
     # [["folder1", 1],
-    #  ["...folder2", 2] - locked
+    #  ["...folder2", 2] - locked for admin
     assert tree.to_s.include?('folder1'), "'folder1' string in the folder tree expected."
     assert !tree.to_s.include?('...folder2'), "'...folder2' string in the folder tree not expected."
   end
@@ -199,6 +215,42 @@ class DmsfFolderTest < RedmineDmsf::Test::UnitTest
   def test_permissions_users
     users = @folder7.permissions_users
     assert_equal 1,  users.size
+  end
+
+  def test_move_to
+    User.current = @jsmith
+    assert @folder1.move_to(@project2, nil)
+    assert_equal @project2, @folder1.project
+    @folder1.dmsf_folders.each do |d|
+      assert_equal @project2.identifier, d.project.identifier
+    end
+    @folder1.dmsf_files.each do |f|
+      assert_equal @project2, f.project
+    end
+    @folder1.dmsf_links.each do |l|
+      assert_equal @project2, l.project
+    end
+  end
+
+  def test_copy_to
+    assert @folder1.copy_to(@project2, nil)
+    assert DmsfFolder.find_by(project_id: @project2.id, title: @folder1.title)
+  end
+
+  def test_valid_parent
+    @folder2.dmsf_folder = @folder1
+    assert @folder2.save
+  end
+
+  def test_valid_parent_nil
+    @folder2.dmsf_folder = nil
+    assert @folder2.save
+  end
+
+  def test_valid_parent_loop
+    @folder1.dmsf_folder = @folder2
+    # @folder2 is under @folder1 => loop!
+    assert !@folder1.save
   end
 
 end

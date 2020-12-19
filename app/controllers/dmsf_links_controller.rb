@@ -23,8 +23,9 @@ class DmsfLinksController < ApplicationController
 
   model_object DmsfLink
 
-  before_action :find_model_object, :only => [:destroy, :restore]
+  before_action :find_model_object, only: [:destroy, :restore]
   before_action :find_link_project
+  before_action :find_folder, only: [:destroy]
   before_action :authorize
   before_action :permissions
 
@@ -150,12 +151,13 @@ class DmsfLinksController < ApplicationController
     respond_to do |format|
       format.html {
         if params[:dmsf_link][:type] == 'link_from'
-          redirect_to dmsf_folder_path(:id => @project.id, :folder_id => @dmsf_link.dmsf_folder_id)
+          redirect_to dmsf_folder_path(id: @project, folder_id: @dmsf_link.dmsf_folder_id)
         else
           if params[:dmsf_link][:dmsf_file_id].present?
             redirect_to dmsf_file_path(@dmsf_link.target_file)
           else
-            redirect_to edit_dmsf_path(:id => params[:dmsf_link][:project_id], :folder_id => params[:dmsf_link][:dmsf_folder_id])
+            folder = @dmsf_link.target_folder.dmsf_folder if @dmsf_link.target_folder
+            redirect_to dmsf_folder_path(id: @project, folder_id: folder)
           end
         end
       }
@@ -171,24 +173,20 @@ class DmsfLinksController < ApplicationController
       if @dmsf_link.delete(commit)
         flash[:notice] = l(:notice_successful_delete)
       else
-        @dmsf_link.errors.each do |e, msg|
-          flash[:error] = msg
-        end
+        flash[:error] = @dmsf_link.errors.full_messages.to_sentence
       end
     end
     rescue => e
       errors[:base] << e.message
       return false
     end
-
-    redirect_to :back
+    redirect_back fallback_location: dmsf_folder_path(id: @project, folder_id: @folder)
   end
 
   def restore
     if @dmsf_link.restore
       flash[:notice] = l(:notice_dmsf_link_restored)
     end
-
     redirect_to :back
   end
 
@@ -213,6 +211,12 @@ class DmsfLinksController < ApplicationController
       end
       @project = Project.find(pid)
     end
+  rescue ActiveRecord::RecordNotFound
+    render_404
+  end
+
+  def find_folder
+    @folder = DmsfFolder.find params[:folder_id] if params[:folder_id].present?
   rescue ActiveRecord::RecordNotFound
     render_404
   end

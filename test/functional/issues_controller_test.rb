@@ -23,40 +23,13 @@ require File.expand_path('../../test_helper', __FILE__)
 
 class IssuesControllerTest < RedmineDmsf::Test::TestCase
 
-  fixtures :users, :email_addresses, :user_preferences, :projects, :dmsf_file_revisions, :dmsf_folders,
-           :dmsf_files, :projects, :issues, :versions, :trackers, :projects_trackers, :roles, :members, :member_roles,
-           :enabled_modules, :enumerations, :issue_statuses
+  fixtures :user_preferences, :issues, :versions, :trackers, :projects_trackers, :issue_statuses,
+    :enabled_modules, :dmsf_folders, :dmsf_files, :dmsf_file_revisions, :enumerations
 
   def setup
-    @user_manager = User.find 2
-    @project1 = Project.find 1
-    @project1.enable_module! :dmsf
-    @project1.enable_module! :issue_tracking
-    @project2 = Project.find 2
-    @project2.enable_module! :dmsf
-    @project2.enable_module! :issue_tracking
+    super
     @issue1 = Issue.find 1
-    @dmsf_storage_directory = Setting.plugin_redmine_dmsf['dmsf_storage_directory']
-    Setting.plugin_redmine_dmsf['dmsf_storage_directory'] = 'files/dmsf'
-    FileUtils.cp_r File.join(File.expand_path('../../fixtures/files', __FILE__), '.'), DmsfFile.storage_path
-    User.current = nil
-    @request.session[:user_id] = @user_manager.id
-  end
-
-  def teardown
-    # Delete our tmp folder
-    begin
-      FileUtils.rm_rf DmsfFile.storage_path
-    rescue => e
-      error e.message
-    end
-    Setting.plugin_redmine_dmsf['dmsf_storage_directory'] = @dmsf_storage_directory
-  end
-  
-  def test_truth
-    assert_kind_of Project, @project1
-    assert_kind_of Project, @project2
-    assert_kind_of Issue, @issue1
+    @request.session[:user_id] = @jsmith.id
   end
 
   def test_put_update_with_project_change
@@ -68,8 +41,8 @@ class IssuesControllerTest < RedmineDmsf::Test::TestCase
     main_system_folder = @issue1.main_system_folder
     assert main_system_folder
     assert_equal @project1.id, main_system_folder.project_id
-    put :update, :params => {id: @issue1.id, issue: { project_id: @project2.id, tracker_id: '1', priority_id: '6',
-        category_id: '3' }}
+    put :update, params: { id: @issue1.id, issue: { project_id: @project2.id, tracker_id: '1', priority_id: '6',
+        category_id: '3' } }
     assert_redirected_to action: 'show', id: @issue1.id
     @issue1.reload
     assert_equal @project2.id, @issue1.project.id

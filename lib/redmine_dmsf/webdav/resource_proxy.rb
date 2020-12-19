@@ -34,18 +34,14 @@ module RedmineDmsf
 
       attr_reader :read_only
 
-      def initialize(*args)
+      def initialize(path, request, response, options)
         # Return 404 - NotFound if WebDAV is not enabled
-        raise NotFound unless Setting.plugin_redmine_dmsf['dmsf_webdav']
-        super(*args)
-        pinfo = path.split('/').drop(1)
-        if pinfo.length == 0 # If this is the base_path, we're at root
-          @resource_c = IndexResource.new(*args)
-        elsif pinfo.length == 1 # This is the first level, and as such, project path
-          @resource_c = ProjectResource.new(*args)
-        else # We made it all the way to DMSF Data
-          @resource_c = DmsfResource.new(*args)
+        unless Setting.plugin_redmine_dmsf['dmsf_webdav']
+          raise NotFound
         end
+        super path, request, response, options
+        rc = get_resource_class(path)
+        @resource_c = rc.new(path, request, response, options)
         @resource_c.accessor = self if @resource_c
         @read_only = Setting.plugin_redmine_dmsf['dmsf_webdav_strategy'] == 'WEBDAV_READ_ONLY'
       end
@@ -83,10 +79,6 @@ module RedmineDmsf
         @resource_c.exist?
       end
 
-      def really_exist?
-        @resource_c.really_exist?
-      end
-
       def creation_date
         @resource_c.creation_date
       end
@@ -108,12 +100,12 @@ module RedmineDmsf
       end
 
       def get(request, response)
-        @resource_c.get(request, response)
+        @resource_c.get request, response
       end
 
       def put(request, response)
         raise BadGateway if @read_only
-        @resource_c.put(request, response)
+        @resource_c.put request, response
       end
 
       def delete
@@ -123,12 +115,12 @@ module RedmineDmsf
 
       def copy(dest, overwrite, depth)
         raise BadGateway if @read_only
-        @resource_c.copy(dest, overwrite, depth)
+        @resource_c.copy dest, overwrite, depth
       end
 
       def move(dest, overwrite = false)
         raise BadGateway if @read_only
-        @resource_c.move(dest, overwrite)
+        @resource_c.move dest, overwrite
       end
 
       def make_collection
@@ -142,16 +134,16 @@ module RedmineDmsf
 
       def lock(args)
         raise BadGateway if @read_only
-        @resource_c.lock(args)
+        @resource_c.lock args
       end
 
       def lock_check(lock_scope = nil)
-        @resource_c.lock_check(lock_scope)
+        @resource_c.lock_check lock_scope
       end
 
       def unlock(token)
         raise BadGateway if @read_only
-        @resource_c.unlock(token)
+        @resource_c.unlock token
       end
 
       def name
@@ -167,7 +159,7 @@ module RedmineDmsf
       end
 
       def get_property(element)
-        @resource_c.get_property(element)
+        @resource_c.get_property element
       end
 
       def properties
@@ -175,8 +167,32 @@ module RedmineDmsf
       end
 
       def propstats(response, stats)
-        @resource_c.propstats(response, stats)
+        @resource_c.propstats response, stats
       end
+
+      private
+
+      def get_resource_class(path)
+        pinfo = path.split('/').drop(1)
+        return IndexResource if pinfo.length == 0
+        return ProjectResource if pinfo.length == 1
+        i = 1
+        project = nil
+        prj = nil
+        while pinfo.length > 0
+          prj = BaseResource::get_project(Project, pinfo.first, project)
+          if prj
+            project = prj
+          else
+            break
+          end
+          i = i + 1
+          pinfo = path.split('/').drop(i)
+        end
+        prj ? ProjectResource : DmsfResource
+      end
+
     end
+
   end
 end

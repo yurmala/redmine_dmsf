@@ -40,7 +40,6 @@ ja:
   error_folder_creation_failed: フォルダを作成できません
   error_folder_title_must_be_entered: タイトルが必要です
   notice_folder_deleted: フォルダを削除しました
-  error_folder_is_not_empty: フォルダが空ではありません
   error_folder_title_is_already_used: タイトルは既に使われています
   notice_folder_details_were_saved: フォルダの詳細を保存しました
   error_folder_is_locked: フォルダはロックされています
@@ -67,7 +66,6 @@ ja:
   notice_file_notifications_deactivated: ファイル通知を無効にしました
   link_details: "%{title} の詳細を表示"
   link_edit: "%{title} を編集"
-  submit_create: 作成
   link_create_folder: フォルダ作成
   link_title: タイトル
   link_size: サイズ
@@ -77,12 +75,10 @@ ja:
   title_check_for_zip_download_or_email: Zip圧縮してダウンロードまたはメールするにはチェック
   title_check_for_restore_or_delete: 復元または削除するにはチェック
 
-  title_delete: 削除する
   title_notifications_active_deactivate: "通知は有効です: 無効にする"
   title_notifications_not_active_activate: "通知は無効です: 有効にする"
   title_title_version_version_download: "%{title} のバージョン %{version} をダウンロードする"
   title_locked_by_user: "%{user} によってロックされています"
-  title_locked_by_you: あなたがロックしています
   title_waiting_for_approval: 承認待ち
   title_approved: 承認済み
   title_unlock_file: ロック解除して他のメンバーの変更を許可する
@@ -129,9 +125,6 @@ ja:
   option_version_major: メジャー
   option_version_custom: カスタム
   label_new_content: 新規コンテンツ
-  label_maximum_files_upload: 最大ファイルアップロード数
-  note_maximum_number_of_files_uploaded: 一度にアップロードできるファイル数の上限。0は無制限。
-
   label_maximum_files_download: 最大ファイルダウンロード数
   note_maximum_number_of_files_downloaded: Zip でダウンロードできる、またはメールで送信できるファイル数の上限。0は無制限。
 
@@ -151,7 +144,6 @@ ja:
     with 'Z', STEM_ALL - Search for stemmed forms of all words (note: no 'Z' prefix is added)."
   label_default_notifications: ファイル通知の既定値
   heading_uploaded_files: アップロードされたファイル
-  submit_commit: コミット
   link_documents: 文書
   permission_view_dmsf_file_revision_accesses: ダウンロード履歴の表示
   permission_view_dmsf_file_revisions: リビジョン履歴の表示
@@ -248,7 +240,6 @@ ja:
   label_dmsf_workflow_plural_num: 承認ワークフロー数 (%{count})
   label_dmsf_workflow_step: ステップ
   label_dmsf_workflow_step_plural: ステップ
-  label_dmsf_workflow_approval: 承認
   label_dmsf_workflow_approval_plural: 承認
   label_dmsf_wokflow_action_approve: 承認
   label_dmsf_wokflow_action_reject: 否認
@@ -344,18 +335,10 @@ ja:
   error_lock_exclusively: 既にロックされているリソースを排他的にロックできません
   error_unlock_parent_locked: ロック解除に失敗しました - リソースの親フォルダがロックされています
 
-  field_dmsf_tree_view: Navigate folders in a tree
   label_dmsf_version: バージョン
 
   locked_documents: ロック中
   open_approvals: 未承認
-
-  label_maximum_ajax_upload_filesize: アップロードファイルサイズ上限
-  note_maximum_ajax_upload_filesize: アップロード可能なファイルサイズの上限。AjaxおよびRedmineの仕様に制限される
-    （2ギガバイト程度までは確認済み）単位はMB。
-
-  label_classic: クラシック
-  label_drag_drop: モダン
 
   error_maximum_upload_filecount: 一度にアップロードできるファイルは %{files} つまでです。
 
@@ -411,7 +394,22 @@ ja:
   text_dmsf_fast_links_info: ターゲットフォルダのIDを手動で入力することで、リンク作成時のプロセスを高速化することができます。
 
 
-  label_inherited_permissions: Inherited permissions
+  label_dmsf_permissions: Allow access only to
+  label_inherited_permissions: Inherited Access for
+
+  button_edit_content: Edit content
+  field_workflow: Workflow
+  field_modified: Date
+  field_updated: Date
+  field_count: D/L
+  field_first_at: First
+  field_last_at: Last
+  field_size: Size
+
+  label_add_width: Add with
+
+  dmsf_webdav_ignore_1b_file_for_authentication: Ignore 1b file sent for authentication
+  dmsf_webdav_ignore_1b_file_for_authentication_info: Total Commander WebDAV plugin
 
   easy_pages:
     modules:

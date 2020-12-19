@@ -25,7 +25,7 @@ class DmsfLink < ActiveRecord::Base
 
   belongs_to :project
   belongs_to :dmsf_folder
-  belongs_to :deleted_by_user, :class_name => 'User', :foreign_key => 'deleted_by_user_id'
+  belongs_to :deleted_by_user, class_name: 'User', foreign_key: 'deleted_by_user_id'
   belongs_to :user
 
   validates :name, presence: true, length: { maximum: 255 }
@@ -79,22 +79,15 @@ class DmsfLink < ActiveRecord::Base
     @target_project
   end
 
-  def folder
-    if !@folder && dmsf_folder_id
-      @folder = DmsfFolder.find_by(id: dmsf_folder_id)
-    end
-    @folder
-  end
-
   def title
     name
   end
 
   def self.find_link_by_file_name(project, folder, filename)
     links = DmsfLink.where(
-      :project_id => project.id,
-      :dmsf_folder_id => folder ? folder.id : nil,
-      :target_type => DmsfFile.model_name.to_s).visible.all
+      project_id: project.id,
+      dmsf_folder_id: folder ? folder.id : nil,
+      target_type: DmsfFile.model_name.to_s).visible.all
     links.each do |link|
       return link if link.target_file && (link.target_file.name == filename)
     end
@@ -114,6 +107,12 @@ class DmsfLink < ActiveRecord::Base
     path
   end
 
+  def move_to(target_project, target_folder)
+    self.project = target_project
+    self.dmsf_folder = target_folder
+    save
+  end
+
   def copy_to(project, folder)
     link = DmsfLink.new
     link.target_project_id = target_project_id
@@ -127,22 +126,13 @@ class DmsfLink < ActiveRecord::Base
     link
   end
 
-  def container
-    if folder && folder.system
-      Issue.find_by(id: folder.title)
-    end
-  end
-
   def delete(commit = false)
     if commit
-      if container.is_a?(Issue)
-        container.dmsf_file_removed(target_file)
-      end
       destroy
     else
       self.deleted = STATUS_DELETED
       self.deleted_by_user = User.current
-      save(:validate => false)
+      save validate: false
     end
   end
 
@@ -153,7 +143,7 @@ class DmsfLink < ActiveRecord::Base
     end
     self.deleted = STATUS_ACTIVE
     self.deleted_by_user = nil
-    save(:validate => false)
+    save validate: false
   end
 
   def is_folder?
@@ -162,41 +152,6 @@ class DmsfLink < ActiveRecord::Base
 
   def is_file?
     !is_folder?
-  end
-
-  def to_csv(columns, level)
-    csv = []
-    if target_type == 'DmsfUrl'
-      # Project
-      csv << project.name if columns.include?(l(:field_project))
-      # Id
-      csv << id if columns.include?('id')
-      # Title
-      csv << title.insert(0, ' ' * level) if columns.include?('title')
-      # Extension
-      csv << '' if columns.include?('extension')
-      # Size
-      csv << '' if columns.include?('size')
-      # Modified
-      csv << format_time(updated_at) if columns.include?('modified')
-      # Version
-      csv << '' if columns.include?('version')
-      # Workflow
-      csv << '' if columns.include?('workflow')
-      # Author
-      csv << user.name if columns.include?('author')
-      # Last approver
-      csv << '' if columns.include?(l(:label_last_approver))
-      # Url
-      csv << external_url if columns.include?(l(:label_document_url))
-      # Revision
-      csv << '' if columns.include?(l(:label_last_revision_id))
-      # Custom fields
-      CustomField.where(type: 'DmsfFileRevisionCustomField').order(:position).each do |c|
-        csv << '' if columns.include?(c.name)
-      end
-    end
-    csv
   end
 
 end

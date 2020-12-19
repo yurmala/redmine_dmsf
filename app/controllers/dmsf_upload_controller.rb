@@ -24,11 +24,11 @@ class DmsfUploadController < ApplicationController
 
   menu_item :dmsf
 
-  before_action :find_project, :except => [:upload, :delete_dmsf_attachment, :delete_dmsf_link_attachment]
-  before_action :authorize, :except => [:upload, :delete_dmsf_attachment, :delete_dmsf_link_attachment]
-  before_action :authorize_global, :only => [:upload, :delete_dmsf_attachment, :delete_dmsf_link_attachment]
-  before_action :find_folder, :except => [:upload_file, :upload, :commit, :delete_dmsf_attachment, :delete_dmsf_link_attachment]
-  before_action :permissions, :except => [:upload_file, :upload, :commit, :delete_dmsf_attachment, :delete_dmsf_link_attachment]
+  before_action :find_project, except: [:upload, :delete_dmsf_attachment, :delete_dmsf_link_attachment]
+  before_action :authorize, except: [:upload, :delete_dmsf_attachment, :delete_dmsf_link_attachment]
+  before_action :authorize_global, only: [:upload, :delete_dmsf_attachment, :delete_dmsf_link_attachment]
+  before_action :find_folder, except: [:upload, :commit, :delete_dmsf_attachment, :delete_dmsf_link_attachment]
+  before_action :permissions, except: [:upload, :commit, :delete_dmsf_attachment, :delete_dmsf_link_attachment]
 
   helper :all
   helper :dmsf_workflows
@@ -41,6 +41,7 @@ class DmsfUploadController < ApplicationController
   end
 
   def upload_files
+    @wiki = Setting.text_formatting != 'HTML'
     uploaded_files = params[:dmsf_attachments]
     @uploads = []
     if uploaded_files
@@ -49,36 +50,10 @@ class DmsfUploadController < ApplicationController
         upload = DmsfUpload.create_from_uploaded_attachment(@project, @folder, uploaded_file)
         @uploads.push(upload) if upload
       end
-    else
-      # plupload multi upload completed
-      uploaded = params[:uploaded]
-      if uploaded
-        uploaded.each do |_, uploaded_file|
-          @uploads.push(DmsfUpload.new(@project, @folder, uploaded_file))
-        end
-      end
     end
-  end
-
-  # async single file upload handling
-  def upload_file
-    @tempfile = params[:file]
-    unless @tempfile.original_filename
-      render_404
-      return
+    if @uploads.empty?
+      flash.now[:error] = l(:label_attachment) + ' ' + l('activerecord.errors.messages.invalid')
     end
-    @disk_filename = DmsfHelper.temp_filename(@tempfile.original_filename)
-    @tempfile_path = DmsfHelper.temp_dir.join(@disk_filename).to_s
-    File.open(@tempfile_path, 'wb') do |f|
-      if params[:file].respond_to?(:read)
-        while (buffer = @tempfile.read(8192))
-          f.write(buffer)
-        end
-      else
-        f.write(@tempfile)
-      end
-    end
-    render :layout => false
   end
 
   # REST API and Redmine attachment form
@@ -88,17 +63,25 @@ class DmsfUploadController < ApplicationController
       return
     end
 
-    @attachment = Attachment.new(:file => request.raw_post)
+    @attachment = Attachment.new(file: request.body)
     @attachment.author = User.current
     @attachment.filename = params[:filename].presence || Redmine::Utils.random_hex(16)
     @attachment.content_type = params[:content_type].presence
-    saved = @attachment.save
+    if defined?(EasyExtensions)
+      @attachment.skip_description_required = true
+    end
+    begin
+      Attachment.skip_callback(:commit, :after, :reuse_existing_file_if_possible)
+      saved = @attachment.save
+    ensure
+      Attachment.set_callback(:commit, :after, :reuse_existing_file_if_possible)
+    end
 
     respond_to do |format|
       format.js
       format.api {
         if saved
-          render :action => 'upload', :status => :created
+          render action: 'upload', status: :created
         else
           render_validation_errors(@attachment)
         end
@@ -117,13 +100,14 @@ class DmsfUploadController < ApplicationController
     if attachments
       @folder = DmsfFolder.visible.find_by(id: attachments[:folder_id]) if attachments[:folder_id].present?
       # standard file input uploads
-      uploaded_files = attachments.select { |key, value| key == 'uploaded_file'}
+      uploaded_files = attachments.select { |key, _| key == 'uploaded_file'}
       uploaded_files.each do |_, uploaded_file|
         upload = DmsfUpload.create_from_uploaded_attachment(@project, @folder, uploaded_file)
         if upload
           uploaded_file[:disk_filename] = upload.disk_filename
           uploaded_file[:tempfile_path] = upload.tempfile_path
           uploaded_file[:size] = upload.size
+          uploaded_file[:digest] = upload.digest
         end
       end
       commit_files_internal uploaded_files
@@ -151,7 +135,7 @@ class DmsfUploadController < ApplicationController
     respond_to do |format|
       format.js
       format.api  { render_validation_errors(failed_uploads) unless failed_uploads.empty? }
-      format.html { redirect_to dmsf_folder_path(:id => @project, :folder_id => @folder) }
+      format.html { redirect_to dmsf_folder_path(id: @project, folder_id: @folder) }
     end
   end
 

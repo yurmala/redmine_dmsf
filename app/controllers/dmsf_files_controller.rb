@@ -24,17 +24,20 @@ class DmsfFilesController < ApplicationController
 
   menu_item :dmsf
 
-  before_action :find_file, :except => [:delete_revision, :obsolete_revision]
-  before_action :find_revision, :only => [:delete_revision, :obsolete_revision]
+  before_action :find_file, except: [:delete_revision, :obsolete_revision]
+  before_action :find_revision, only: [:delete_revision, :obsolete_revision]
+  before_action :find_folder, only: [:delete, :create_revision]
   before_action :authorize
-  before_action :tree_view, :only => [:delete]
   before_action :permissions
 
   accept_api_auth :show, :view, :delete
 
-  helper :all
+  helper :custom_fields
   helper :dmsf_workflows
   helper :dmsf
+  helper :queries
+
+  include QueriesHelper
 
   def permissions
     if @file
@@ -51,7 +54,7 @@ class DmsfFilesController < ApplicationController
         @revision = DmsfFileRevision.find(params[:download].to_i)
         raise DmsfAccessError if @revision.dmsf_file != @file
       end
-      check_project(@revision.dmsf_file)
+      check_project @revision.dmsf_file
       raise ActionController::MissingFile if @file.deleted?
       access = DmsfFileRevisionAccess.new
       access.user = User.current
@@ -66,10 +69,10 @@ class DmsfFilesController < ApplicationController
       end
       # IE has got a tendency to cache files
       expires_in(0.year, 'must-revalidate' => true)
-      send_file(@revision.disk_file,
-        :filename => filename_for_content_disposition(@revision.formatted_name(title_format)),
-        :type => @revision.detect_content_type,
-        :disposition => @revision.dmsf_file.disposition)
+      send_file @revision.disk_file,
+        filename: filename_for_content_disposition(@revision.formatted_name(title_format)),
+        type: @revision.detect_content_type,
+        disposition: params[:disposition].present? ? params[:disposition] : @revision.dmsf_file.disposition
     rescue DmsfAccessError => e
       Rails.logger.error e.message
       render_403
@@ -83,11 +86,13 @@ class DmsfFilesController < ApplicationController
     @revision = @file.last_revision
     @file_delete_allowed = User.current.allowed_to?(:file_delete, @project)
     @file_manipulation_allowed = User.current.allowed_to?(:file_manipulation, @project)
-    @revision_pages = Paginator.new @file.dmsf_file_revisions.visible.count, params['per_page'] ? params['per_page'].to_i : 25, params['page']
+    @revision_count = @file.dmsf_file_revisions.visible.all.size
+    @revision_pages = Paginator.new @revision_count, params['per_page'] ? params['per_page'].to_i : 25, params['page']
+    @wiki = Setting.text_formatting != 'HTML'
 
     respond_to do |format|
       format.html {
-        render :layout => !request.xhr?
+        render layout: !request.xhr?
       }
       format.api
     end
@@ -125,17 +130,12 @@ class DmsfFilesController < ApplicationController
             revision.size = upload.size
             revision.disk_filename = revision.new_storage_filename
             revision.mime_type = upload.mime_type
-            revision.digest = DmsfFileRevision.create_digest upload.tempfile_path
+            revision.digest = upload.digest
           end
         else
           revision.size = last_revision.size
           revision.disk_filename = last_revision.disk_filename
           revision.mime_type = last_revision.mime_type
-          if last_revision.digest.blank?
-            revision.digest = DmsfFileRevision.create_digest last_revision.disk_file
-          else
-            revision.digest = last_revision.digest
-          end
         end
 
         # Custom fields
@@ -172,6 +172,7 @@ class DmsfFilesController < ApplicationController
           end
           if @file.save
             @file.set_last_revision revision
+            Redmine::Hook.call_hook :dmsf_helper_upload_after_commit, { file: @file }
             flash[:notice] = (flash[:notice].nil? ? '' : flash[:notice]) + l(:notice_file_revision_created)
             begin
               recipients = DmsfMailer.deliver_files_updated(@project, [@file])
@@ -179,7 +180,7 @@ class DmsfFilesController < ApplicationController
                 if recipients.any?
                   to = recipients.collect{ |r| r.name }.first(DMSF_MAX_NOTIFICATION_RECEIVERS_INFO).join(', ')
                   to << ((recipients.count > DMSF_MAX_NOTIFICATION_RECEIVERS_INFO) ? ',...' : '.')
-                  flash[:warning] = l(:warning_email_notifications, :to => to)
+                  flash[:warning] = l(:warning_email_notifications, to: to)
                 end
               end
             rescue => e
@@ -209,7 +210,7 @@ class DmsfFilesController < ApplicationController
               if recipients.any?
                 to = recipients.collect{ |r| r.name }.first(DMSF_MAX_NOTIFICATION_RECEIVERS_INFO).join(', ')
                 to << ((recipients.count > DMSF_MAX_NOTIFICATION_RECEIVERS_INFO) ? ',...' : '.')
-                flash[:warning] = l(:warning_email_notifications, :to => to)
+                flash[:warning] = l(:warning_email_notifications, to: to)
               end
             end
           rescue => e
@@ -224,11 +225,7 @@ class DmsfFilesController < ApplicationController
     end
     respond_to do |format|
       format.html do
-        if commit || (@tree_view && params[:details].blank?)
-          redirect_to :back
-        else
-          redirect_to dmsf_folder_path(:id => @project, :folder_id => @file.dmsf_folder)
-        end
+        redirect_to dmsf_folder_path(id: @project, folder_id: @folder)
       end
       format.api { result ? render_api_ok : render_validation_errors(@file) }
     end
@@ -325,9 +322,9 @@ class DmsfFilesController < ApplicationController
     if @file.image? && tbnail = @file.thumbnail(:size => params[:size])
       if stale?(:etag => tbnail)
         send_file tbnail,
-                  :filename => filename_for_content_disposition(@file.last_revision.disk_file),
-                  :type => @file.last_revision.detect_content_type,
-                  :disposition => 'inline'
+                  filename: filename_for_content_disposition(@file.last_revision.disk_file),
+                  type: @file.last_revision.detect_content_type,
+                  disposition: 'inline'
       end
     else
       head 404
@@ -351,15 +348,16 @@ class DmsfFilesController < ApplicationController
     render_404
   end
 
+  def find_folder
+    @folder = DmsfFolder.find params[:folder_id] if params[:folder_id].present?
+  rescue ActiveRecord::RecordNotFound
+    render_404
+  end
+
   def check_project(entry)
     if entry && entry.project != @project
       raise DmsfAccessError, l(:error_entry_project_does_not_match_current_project)
     end
-  end
-
-  def tree_view
-    tag = params[:custom_field_id].present? && params[:custom_value].present?
-    @tree_view = (User.current.pref.dmsf_tree_view == '1') && (!%w(atom xml json).include?(params[:format])) && !tag
   end
 
 end

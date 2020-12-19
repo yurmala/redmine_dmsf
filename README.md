@@ -1,7 +1,7 @@
 Redmine DMSF Plugin
 ===================
 
-The current version of Redmine DMSF is **2.4.2** [![Build Status](https://api.travis-ci.org/danmunn/redmine_dmsf.png)](https://travis-ci.org/danmunn/redmine_dmsf)
+The current version of Redmine DMSF is **2.4.5** [![Build Status](https://api.travis-ci.org/danmunn/redmine_dmsf.png)](https://travis-ci.org/danmunn/redmine_dmsf)
 
 Redmine DMSF is Document Management System Features plugin for Redmine issue tracking system; It is aimed to replace current Redmine's Documents module.
 
@@ -25,8 +25,7 @@ Features
   * Document versioning / revision history
   * Email notifications for directories and/or documents
   * Document locking
-  * Multi (drag/drop depending on browser) upload/download
-  * Multi download via zip
+  * Multi (drag/drop depending on browser) upload/download  
   * Direct document or document link sending via email
   * Configurable document approval workflow
   * Document access auditing
@@ -34,16 +33,15 @@ Features
   * Wiki macros for quick content linking
   * Full read/write webdav functionality
   * Optional document content full-text search
-  * Documents and folders symbolic links
-  * Document tagging
+  * Documents and folders symbolic links  
   * Trash bin
   * Documents attachable to issues
-  * Compatible with Redmine 4.1.x
+  * Compatible with Redmine 4.0.x and 4.1.x
 
 Dependencies
 ------------
   
-  * Redmine 4.1.0 or higher
+  * Redmine 4.0.0 or higher
 
 ### Full-text search (optional)
 
@@ -154,6 +152,18 @@ Thumbnail with height of 200px: `{{dmsftn(8)}}`
 
 Thumbnail with custom size: `{{dmsftn(8, size=300)}}`
 
+Inline video of the file with id 8; it must be an image file such as MP4: `{{dmsf_video(9)}}`
+
+Inline video with custom size: `{{dmsf_video(9, size=300)}}`
+
+Inline video with custom size: `{{dmsf_video(9, size=50%)}}`
+
+Inline video with custom height: `{{dmsf_video(9, height=300)}}`
+
+Inline video with custom width: `{{dmsf_video(9, width=300)}}`
+
+Inline video with custom size: `{{dmsf_video(9, size=640x480)}}`
+
 Approval workflow status of a document with id 8: `{{dmsfw(8)}}`
 
 The DMSF document/revision id can be found in document details.
@@ -222,9 +232,13 @@ You can either clone the master branch or download the latest zipped version. Be
    of need rename _redmine_dmsf-x.y.z_ to *redmine_dmsf*.
 3. **Go to the redmine directory** `cd redmine`   
 3. Install dependencies: `bundle install`.
-4. Initialize/Update database: `bundle exec rake redmine:plugins:migrate NAME=redmine_dmsf RAILS_ENV="production"`.
+4. Initialize/Update database:
+    
+    `RAILS_ENV=production bundle exec rake db:migrate`
+    
+    `RAILS_ENV=production bundle exec rake redmine:plugins:migrate NAME=redmine_dmsf`
 5. The access rights must be set for web server, example: `chown -R www-data:www-data plugins/redmine_dmsf`.
-6. Restart the web server. e.g. `service apache2 restart`
+6. Restart the web server, e.g. `systemctl restart apache2`
 7. You should configure the plugin via Redmine interface: Administration -> Plugins -> DMSF -> Configure.
 8. Don't forget to grant permissions for DMSF in Administration -> Roles and permissions
 9. Assign DMSF permissions to appropriate roles.

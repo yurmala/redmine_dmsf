@@ -101,7 +101,7 @@ def system_or_raise(command)
   if $verbose > 0
     raise "\"#{command}\" failed" unless system command
   else
-    raise "\"#{command}\" failed" unless system command, :out => '/dev/null'
+    raise "\"#{command}\" failed" unless system command, out: '/dev/null'
   end
 end
 
@@ -142,7 +142,7 @@ $stem_langs.each do | lang |
   cmd << ' -v' if $verbose > 0
   cmd << ' --retry-failed' if $retryfailed
   log cmd
-  system_or_raise (cmd)
+  system_or_raise cmd
 end
 log 'Redmine DMS documents indexed'
 

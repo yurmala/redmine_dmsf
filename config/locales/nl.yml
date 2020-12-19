@@ -40,7 +40,6 @@ nl:
   error_folder_creation_failed: Map aanmaken mislukt
   error_folder_title_must_be_entered: Titel moet worden ingevoerd
   notice_folder_deleted: Map verwijderd
-  error_folder_is_not_empty: Map is niet leeg
   error_folder_title_is_already_used: Titel is al in gebruik
   notice_folder_details_were_saved: Gegevens map zijn opgeslagen
   error_folder_is_locked: Map is vergrendeld
@@ -67,7 +66,6 @@ nl:
   notice_file_notifications_deactivated: Meldingen bestand gedeactiveerd
   link_details: "%{title} details"
   link_edit: "Aanpassen %{title}"
-  submit_create: Aanmaken
   link_create_folder: Maak map
   link_title: Titel
   link_size: Bestandsgrootte
@@ -77,12 +75,10 @@ nl:
   title_check_for_zip_download_or_email: Vink voor zip, download of email
   title_check_for_restore_or_delete: Vink voor herstel of verwijder
 
-  title_delete: Verwijder
   title_notifications_active_deactivate: "Notificaties actief: Deactiveren"
   title_notifications_not_active_activate: "Notificaties niet actief: Activeren"
   title_title_version_version_download: "%{title} versie %{version} downloaden"
   title_locked_by_user: "Vergrendeld door %{user}"
-  title_locked_by_you: Vergrendeld door u
   title_waiting_for_approval: Wacht op goedkeuring
   title_approved: Goedgekeurd
   title_unlock_file: Ontgrendel om wijzigingen door andere leden toe te staan
@@ -129,9 +125,6 @@ nl:
   option_version_major: Belangrijk
   option_version_custom: Aangepast
   label_new_content: Nieuwe inhoud
-  label_maximum_files_upload: Maximale bestandsupload
-  note_maximum_number_of_files_uploaded: Beperkt maximaal aantal bestanden dat tegelijkertijd geupload kan worden. 0
-    betekent onbeperkt.
   label_maximum_files_download: Maximaal aantal bestanden download
   note_maximum_number_of_files_downloaded: Beperkt maximaal aantal bestanden gedownload in zip of verzonden via e-mail.
     0 betekent onbeperkt.
@@ -151,7 +144,6 @@ nl:
     with 'Z', STEM_ALL - Search for stemmed forms of all words (note: no 'Z' prefix is added)."
   label_default_notifications: Standaard bestand notificaties
   heading_uploaded_files: Geuploade Bestanden
-  submit_commit: Indienen
   link_documents: Documenten
   permission_view_dmsf_file_revision_accesses: Bekijk downloads in Activiteiten stroom
   permission_view_dmsf_file_revisions: Bekijk revisies in Activiteiten stroom
@@ -248,7 +240,6 @@ nl:
   label_dmsf_workflow_plural_num: "Goedkeuring workflows (%{count})"
   label_dmsf_workflow_step: Stap
   label_dmsf_workflow_step_plural: Stappen
-  label_dmsf_workflow_approval: Goedkeuring
   label_dmsf_workflow_approval_plural: Goedkeuringen
   label_dmsf_wokflow_action_approve: Goedkeuren
   label_dmsf_wokflow_action_reject: Afwijzen
@@ -344,18 +335,10 @@ nl:
   error_lock_exclusively: Vergrendelen niet mogelijk op een reeds vergrendelde bron
   error_unlock_parent_locked: Ontgrendelen mislukt - bron ouder is vergrendeld
 
-  field_dmsf_tree_view: Navigeer door mappen in een boom
   label_dmsf_version: Versie
 
   locked_documents: Vergrendelde documenten
   open_approvals: Open goedkeuringen
-
-  label_maximum_ajax_upload_filesize: Maximale bestandsgrootte te uploaden via AJAX
-  note_maximum_ajax_upload_filesize: Beperkt maximale bestandsgrootte die geupload kan worden via standaard AJAX
-    interface of het Redmine standaard upload formulier moet worden gebruikt. Getal is in MB.
-
-  label_classic: Klassiek
-  label_drag_drop: Modern
 
   error_maximum_upload_filecount: "Er kunnen niet meer dan %{filecount} bestand(en) worden geupload."
 
@@ -411,7 +394,22 @@ nl:
   text_dmsf_fast_links_info: You will be able to manually enter a target folder's ID when creating links in order to speed
     up the process of creating links.
 
-  label_inherited_permissions: Inherited permissions
+  label_dmsf_permissions: Allow access only to
+  label_inherited_permissions: Inherited Access for
+
+  button_edit_content: Edit content
+  field_workflow: Workflow
+  field_modified: Date
+  field_updated: Date
+  field_count: D/L
+  field_first_at: First
+  field_last_at: Last
+  field_size: Size
+
+  label_add_width: Add with
+
+  dmsf_webdav_ignore_1b_file_for_authentication: Ignore 1b file sent for authentication
+  dmsf_webdav_ignore_1b_file_for_authentication_info: Total Commander WebDAV plugin
 
   easy_pages:
     modules:

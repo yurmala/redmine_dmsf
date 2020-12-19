@@ -22,7 +22,7 @@
 module DmsfUploadHelper
   include Redmine::I18n
 
-  def self.commit_files_internal(commited_files, project, folder, controller = nil)
+  def self.commit_files_internal(commited_files, project, folder, controller = nil, new_object = false, container = nil)
     failed_uploads = []
     files = []
     if commited_files
@@ -57,7 +57,7 @@ module DmsfUploadHelper
         end
 
         if file.locked_for_user?
-          failed_uploads.push(commited_file)
+          failed_uploads.push file
           next
         end
 
@@ -80,7 +80,7 @@ module DmsfUploadHelper
         end
         new_revision.mime_type = commited_file[:mime_type]
         new_revision.size = commited_file[:size]
-        new_revision.digest = DmsfFileRevision.create_digest commited_file[:tempfile_path]
+        new_revision.digest = commited_file[:digest]
 
         if commited_file[:custom_field_values].present?
           i = 0
@@ -92,43 +92,49 @@ module DmsfUploadHelper
 
         # Need to save file first to generate id for it in case of creation.
         # File id is needed to properly generate revision disk filename
-        if new_revision.valid? && file.save
-          new_revision.disk_filename = new_revision.new_storage_filename
-        else
-          Rails.logger.error (new_revision.errors.full_messages + file.errors.full_messages).to_sentence
-          failed_uploads.push(commited_file)
+        unless new_revision.valid?
+          Rails.logger.error new_revision.errors.full_messages.to_sentence
+          failed_uploads.push new_revision
+          next
+        end
+        unless file.save
+          Rails.logger.error file.errors.full_messages.to_sentence
+          failed_uploads.push file
           next
         end
 
+        new_revision.disk_filename = new_revision.new_storage_filename
+
         if new_revision.save
-          new_revision.assign_workflow(commited_file[:dmsf_workflow_id])
+          new_revision.assign_workflow commited_file[:dmsf_workflow_id]
           begin
             FileUtils.mv commited_file[:tempfile_path], new_revision.disk_file(false)
             FileUtils.chmod 'u=wr,g=r', new_revision.disk_file(false)
             file.set_last_revision new_revision
-            files.push(file)
-            if file.container.is_a?(Issue)
-              file.container.dmsf_file_added(file)
+            files.push file
+            if container && container.is_a?(Issue) && (!new_object)
+              container.dmsf_file_added file
             end
+            Redmine::Hook.call_hook :dmsf_helper_upload_after_commit, { file: file }
           rescue => e
             Rails.logger.error e.message
             controller.flash[:error] = e.message if controller
-            failed_uploads.push(file)
+            failed_uploads.push file
           end
         else
-          failed_uploads.push(commited_file)
+          failed_uploads.push new_revision
         end
         # Approval workflow
         if commited_file[:workflow_id].present?
           wf = DmsfWorkflow.find_by(id: commited_file[:workflow_id])
           if wf
             # Assign the workflow
-            new_revision.set_workflow(wf.id, 'assign')
-            new_revision.assign_workflow(wf.id)
+            new_revision.set_workflow wf.id, 'assign'
+            new_revision.assign_workflow wf.id
             # Start the workflow
-            new_revision.set_workflow(wf.id, 'start')
+            new_revision.set_workflow wf.id, 'start'
             if new_revision.save
-              wf.notify_users(project, new_revision, controller)
+              wf.notify_users project, new_revision, controller
               begin
                 file.lock!
               rescue DmsfLockError => e
@@ -148,7 +154,7 @@ module DmsfUploadHelper
             unless recipients.empty?
               to = recipients.collect{ |r| r.name }.first(DMSF_MAX_NOTIFICATION_RECEIVERS_INFO).join(', ')
               to << ((recipients.count > DMSF_MAX_NOTIFICATION_RECEIVERS_INFO) ? ',...' : '.')
-              controller.flash[:warning] = l(:warning_email_notifications, :to => to) if controller
+              controller.flash[:warning] = l(:warning_email_notifications, to: to) if controller
             end
           end
         rescue => e

@@ -23,22 +23,13 @@
 module RedmineDmsf
   module Webdav
     class IndexResource < BaseResource
-
-      def initialize(path, request, response, options)
-        super(path, request, response, options)
-        @projects = nil
-      end
       
       def children
-        unless @projects
-          @projects = []
-          Project.select(:id, :identifier, :name).has_module(:dmsf).where(
-            Project.allowed_to_condition(
-              User.current, :view_dmsf_folders)).order('lft').find_each do |p|
-            @projects << child_project(p)
-          end
+        unless @children
+          @children = []
+          load_projects Project.where(parent_id: nil)
         end
-        @projects
+        @children
       end
 
       def collection?
@@ -57,14 +48,9 @@ module RedmineDmsf
       def exist?
         true
       end
-      
-      # Index resource ALWAYS really exists
-      def really_exist?
-        true
-      end
 
       def etag
-        sprintf('%x-%x-%x', children.count, 4096, Time.current.to_i)
+        sprintf '%x-%x-%x', children.count, 4096, Time.current.to_i
       end
 
       def content_type
@@ -78,12 +64,8 @@ module RedmineDmsf
       def get(request, response)
         html_display
         response['Content-Length'] = response.body.bytesize.to_s
+        response['Content-Type'] = 'text/html'
         OK
-      end
-
-      # Bugfix: Ensure that this level never indicates a parent
-      def parent
-        nil
       end
 
     end

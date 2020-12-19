@@ -21,23 +21,33 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 require 'dav4rack'
+require 'addressable/uri'
 
 module RedmineDmsf
   module Webdav
+
     class BaseResource < DAV4Rack::Resource
       include Redmine::I18n
       include ActionView::Helpers::NumberHelper
 
       attr_reader :public_path
 
+      DIR_FILE = %{
+                    <tr>
+                      <td class=\"name\"><a href=\"%s\">%s</a></td>
+                      <td class=\"size\">%s</td>
+                      <td class=\"type\">%s</td>
+                      <td class=\"mtime\">%s</td>
+                    </tr>
+                   }
+
       def initialize(path, request, response, options)
         raise NotFound if Setting.plugin_redmine_dmsf['dmsf_webdav'].blank?
         @project = nil
         @public_path = "#{options[:root_uri_path]}#{path}"
-        super(path, request, response, options)
+        @children = nil
+        super path, request, response, options
       end
-
-      DIR_FILE = "<tr><td class=\"name\"><a href=\"%s\">%s</a></td><td class=\"size\">%s</td><td class=\"type\">%s</td><td class=\"mtime\">%s</td></tr>"
 
       def accessor=(klass)
         @__proxy = klass
@@ -53,13 +63,40 @@ module RedmineDmsf
         nil
       end
 
+      # Overridden
+      def index_page
+        %{
+          <!DOCTYPE html>
+          <html lang="#{current_language}">
+            <head>
+              <title>%s</title>
+              <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+            </head>
+            <body>
+              <h1>%s</h1>
+              <hr/>
+              <table>
+                <tr>
+                  <th class="name">#{l(:field_name)}</th>
+                  <th class="size">#{l(:field_filesize)}</th>
+                  <th class="type">#{l(:field_type)}</th>
+                  <th class="mtime">#{l(:link_modified)}</th>
+                </tr>
+                %s
+              </table>
+              <hr/>
+           </body>
+          </html>
+        }
+      end
+
       # Generate HTML for Get requests, or Head requests if no_body is true
       def html_display
         @response.body = +''
-        Confict unless collection?        
-        entities = children.map{|child| 
+        Confict unless collection?
+        entities = children.map{ |child|
           DIR_FILE % [
-            "#{@options[:root_uri_path]}#{child.path}",
+              uri_encode(request.url_for(child.path)),
             child.long_name || child.name, 
             child.collection? ? '' : number_to_human_size(child.content_length),
             child.special_type || child.content_type, 
@@ -67,7 +104,7 @@ module RedmineDmsf
           ]
         } * "\n"
         entities = DIR_FILE % [
-          parent.public_path,
+            uri_encode(request.url_for(parent.path)),
           l(:parent_directory),
           '',
           '',
@@ -81,16 +118,16 @@ module RedmineDmsf
         new_path = @path
         new_path = new_path + '/' unless new_path[-1,1] == '/'
         new_path = '/' + new_path unless new_path[0,1] == '/'
-        @__proxy.class.new("#{new_path}#{name}", request, response, @options.merge(user: @user))
+        @__proxy.class.new "#{new_path}#{name}", request, response, @options.merge(user: @user)
       end
       
       def child_project(p)
         project_display_name = ProjectResource.create_project_name(p)
-        new_path = +@path
+        new_path = @path
         new_path = new_path + '/' unless new_path[-1,1] == '/'
         new_path = '/' + new_path unless new_path[0,1] == '/'
         new_path += project_display_name
-        @__proxy.class.new(new_path, request, response, @options.merge(user: @user))
+        @__proxy.class.new new_path, request, response, @options.merge(user: @user, project: true)
       end
 
       def parent
@@ -100,48 +137,130 @@ module RedmineDmsf
       end
 
       def options(request, response)
-        return NotFound if ((@path.length > 1) && ((!project) || (!project.module_enabled?('dmsf'))))
         if @__proxy.read_only
           response['Allow'] ||= 'OPTIONS,HEAD,GET,PROPFIND'
         end
         OK
       end
 
-    protected
-    
-      def basename
-        File.basename(@path)
-      end
-
-      # Return instance of Project based on the path
       def project
-        unless @project
-          pinfo = @path.split('/').drop(1)
-          if pinfo.length > 0
-            if Setting.plugin_redmine_dmsf['dmsf_webdav_use_project_names']
-              if pinfo.first =~ /(\d+)$/
-                @project = Project.find_by(id: $1)
-                Rails.logger.error("No project found on path '#{@path}'") unless @project
-              end
-            else
-              begin
-                @project = Project.find(pinfo.first)
-              rescue => e
-                Rails.logger.error e.message
-              end
-            end
-          end
-        end
+        get_resource_info
         @project
       end
 
-      # Make it easy to find the path without project in it.
-      def projectless_path
-        '/' + @path.split('/').drop(2).join('/')
+      def subproject
+        get_resource_info
+        @subproject
+      end
+
+      def folder
+        get_resource_info
+        @folder
+      end
+
+      def file
+        get_resource_info
+        @file
+      end
+
+    protected
+
+      def uri_encode(uri)
+        uri.gsub /[\(\)&\[\]]/, '(' => '%28', ')' => '%29', '&' => '%26', '[' => '%5B', ']' => '5D'
+      end
+    
+      def basename
+        File.basename @path
       end
 
       def path_prefix
-        @public_path.gsub(/#{Regexp.escape(path)}$/, '')
+        @public_path.gsub /#{Regexp.escape(path)}$/, ''
+      end
+
+      def load_projects(project_scope)
+        project_scope.visible.find_each do |p|
+          if dmsf_available?(p)
+            @children << child_project(p)
+          end
+        end
+      end
+
+      def self.get_project(scope, name, parent_project)
+        prj = nil
+        if Setting.plugin_redmine_dmsf['dmsf_webdav_use_project_names']
+          if name =~ /^\[?.+ (\d+)\]?$/
+            if parent_project
+              prj = scope.find_by(id: $1, parent_id: parent_project.id)
+            else
+              prj = scope.find_by(id: $1)
+            end
+            if prj
+              # Check again whether it's really the project and not a folder with a number as a suffix
+              prj = nil unless name.start_with?('[' + DmsfFolder::get_valid_title(prj.name))
+            end
+          end
+        else
+          if name.start_with?('[') && name.end_with?(']')
+            identifier = name[1..-2]
+          else
+            identifier = name
+          end
+          if parent_project
+            prj = scope.find_by(identifier: identifier, parent_id: parent_project.id)
+          else
+            prj = scope.find_by(identifier: identifier)
+          end
+        end
+        prj
+      end
+
+      private
+
+      def get_resource_info
+        return if @project # We have already got it
+        pinfo = @path.split('/').drop(1)
+        i = 1
+        while pinfo.length > 0
+          prj = BaseResource::get_project(Project.visible, pinfo.first, @project)
+          if prj
+            @project = prj
+            if pinfo.length == 1
+              @subproject = @project
+              break # We're at the end
+            end
+          else
+            @subproject = nil
+            fld = get_folder(pinfo.first)
+            if fld
+              @folder = fld
+            else
+              @file = DmsfFile.find_file_by_name(@project, @folder, pinfo.first)
+              @folder = nil
+              break # We're at the end
+            end
+          end
+          i = i + 1
+          pinfo = path.split('/').drop(i)
+        end
+      end
+
+      def get_folder(name)
+        return nil unless @project
+        f = DmsfFolder.visible.find_by(project_id: @project.id, dmsf_folder_id: @folder&.id, title: name)
+        if f && (!DmsfFolder.permissions?(f, false))
+          nil
+        else
+          f
+        end
+      end
+
+      # Go recursively through the project tree until a dmsf enabled project is found
+      def dmsf_available?(p)
+        return true if(p.visible? && p.module_enabled?(:dmsf))
+        p.children.each do |child|
+          return true if dmsf_available?(child)
+        end
+        false
       end
 
     end

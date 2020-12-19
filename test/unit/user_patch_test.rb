@@ -22,19 +22,14 @@
 require File.expand_path('../../test_helper', __FILE__)
 
 class UserPatchTest < RedmineDmsf::Test::UnitTest
-  fixtures :users, :projects, :dmsf_files, :dmsf_file_revisions, :dmsf_folders, :dmsf_links
 
-  def setup
-    @user2 = User.find 2
-  end
-
-  def test_truth
-    assert_kind_of User, @user2
-  end
+  fixtures :dmsf_links, :dmsf_locks, :dmsf_workflows, :dmsf_workflow_steps,
+           :dmsf_workflow_step_assignments, :dmsf_workflow_step_actions, :dmsf_folders,
+           :dmsf_files, :dmsf_file_revisions
 
   def test_remove_dmsf_references
-    id = @user2.id
-    @user2.destroy
+    id = @jsmith.id
+    @jsmith.destroy
     assert_equal 0, DmsfFileRevisionAccess.where(user_id: id).all.size
     assert_equal 0, DmsfFileRevision.where(user_id: id).all.size
     assert_equal 0, DmsfFileRevision.where(dmsf_workflow_assigned_by_user_id: id).all.size

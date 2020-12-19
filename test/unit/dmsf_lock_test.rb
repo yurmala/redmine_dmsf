@@ -22,31 +22,19 @@
 
 require File.expand_path('../../test_helper.rb', __FILE__)
 
-class DmsfLockTest < RedmineDmsf::Test::UnitTest  
-  fixtures :projects, :users, :email_addresses, :dmsf_folders, :dmsf_files, 
-    :dmsf_file_revisions, :roles, :members, :member_roles, :enabled_modules, 
-    :enumerations, :dmsf_locks
+class DmsfLockTest < RedmineDmsf::Test::UnitTest
+
+  fixtures :dmsf_locks, :dmsf_folders, :dmsf_files, :dmsf_file_revisions
 
   def setup
-    @lock = dmsf_locks(:dmsf_locks_001)
-    @folder2 = dmsf_folders(:dmsf_folders_002)
-    @file4 = dmsf_files(:dmsf_files_004)
-    @jsmith = User.find 2
-    @admin = User.find 1
-  end
-
-  def test_truth
-    assert_kind_of DmsfLock, @lock
-    assert_kind_of DmsfFile, @file4
-    assert_kind_of DmsfFolder, @folder2
-    assert_kind_of User, @jsmith
-    assert_kind_of User, @admin
+    super
+    @lock = DmsfLock.find 1
   end
 
   def test_lock_type_is_enumerable
-    assert DmsfLock.respond_to?(:lock_types), 
+    assert DmsfLock.respond_to?(:lock_types),
       "DmsfLock class hasn't got lock_types method"
-    assert DmsfLock.lock_types.is_a?(SimpleEnum::Enum), 
+    assert DmsfLock.lock_types.is_a?(SimpleEnum::Enum),
       'DmsfLock class is not enumerable'
   end
 
@@ -58,7 +46,7 @@ class DmsfLockTest < RedmineDmsf::Test::UnitTest
   end
 
   def test_linked_to_either_file_or_folder
-    assert_not_nil @lock.file || @lock.folder    
+    assert_not_nil @lock.file || @lock.folder
     if @lock.file
       assert_kind_of DmsfFile, @lock.file
     else
@@ -66,27 +54,29 @@ class DmsfLockTest < RedmineDmsf::Test::UnitTest
     end
   end
 
-  def test_locked_folder_reports_un_locked_child_file_as_locked    
-    assert @folder2.locked?, 
+  def test_locked_folder_reports_un_locked_child_file_as_locked
+    assert @folder2.locked?,
       "Folder #{@folder2.title} should be locked by fixture"
     assert_equal 1, @folder2.lock.count # Check the folder lists 1 lock
-    assert @file4.locked?, 
+    assert @file4.locked?,
       "File #{@file4.name} sits within #{@folder2.title} and should be locked"
     assert_equal 1, @file4.lock.count # Check the file lists 1 lock
     assert_equal 0, @file4.lock(false).count # Check the file does not list any entries for itself
   end
  
-  def test_locked_folder_cannot_be_unlocked_by_someone_without_rights_or_anon    
+  def test_locked_folder_cannot_be_unlocked_by_someone_without_rights_or_anon
+    User.current = @admin
+    @folder7.lock!
     User.current = nil
-    assert_no_difference ('@folder2.lock.count') do
+    assert_no_difference('@folder7.lock.count') do
       assert_raise DmsfLockError do
-        @folder2.unlock!
+        @folder7.unlock!
       end
     end
     User.current = @jsmith
-     assert_no_difference ('@folder2.lock.count') do
+     assert_no_difference('@folder7.lock.count') do
       assert_raise DmsfLockError do
-        @folder2.unlock!
+        @folder7.unlock!
       end
     end
   end
@@ -109,9 +99,8 @@ class DmsfLockTest < RedmineDmsf::Test::UnitTest
       assert_nothing_raised do
         @folder2.unlock!
       end
-    end    
+    end
     @folder2.lock!
-    User.current = nil
   end
 
   def test_expired

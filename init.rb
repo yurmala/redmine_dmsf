@@ -28,21 +28,19 @@ Redmine::Plugin.register :redmine_dmsf do
     author_url 'https://www.easyredmine.com'
   else
     name 'DMSF'
-    url 'https://www.redmine.org/plugins/dmsf'
+    url 'https://www.redmine.org/plugins/redmine_dmsf'
     author_url 'https://github.com/danmunn/redmine_dmsf/graphs/contributors'
   end
   author 'Vít Jonáš / Daniel Munn / Karel Pičman'
   description 'Document Management System Features'
-  version '2.4.2'
-
-  requires_redmine version_or_higher: '4.1.0'
+  version '2.4.5'
+  
+  requires_redmine version_or_higher: '4.0.0'
 
   settings partial: 'settings/dmsf_settings',
             default: {
-              'dmsf_max_file_upload' => 0,
               'dmsf_max_file_download' => 0,
               'dmsf_max_email_filesize' => 0,
-              'dmsf_max_ajax_upload_filesize' => 100,
               'dmsf_storage_directory' => 'files/dmsf',
               'dmsf_index_database' => File.expand_path('dmsf_index', Rails.root),
               'dmsf_stemming_lang' => 'english',
@@ -60,7 +58,8 @@ Redmine::Plugin.register :redmine_dmsf do
               'dmsf_documents_email_reply_to' => '',
               'dmsf_documents_email_links_only' => nil,
               'dmsf_enable_cjk_ngrams' => nil,
-              'dmsf_webdav_use_project_names' => nil
+              'dmsf_webdav_use_project_names' => nil,
+              'dmsf_webdav_ignore_1b_file_for_authentication' => '1'
             }
 end
 

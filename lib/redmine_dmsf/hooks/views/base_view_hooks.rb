@@ -23,25 +23,18 @@ module RedmineDmsf
     include Redmine::Hook
 
     class DmsfViewListener < Redmine::Hook::ViewListener
-
+      
       def view_layouts_base_html_head(context={})
-        return if defined?(EasyExtensions)
-        "\n".html_safe + stylesheet_link_tag('redmine_dmsf.css', :plugin => :redmine_dmsf) +
-        "\n".html_safe + stylesheet_link_tag('select2.min.css', :plugin => :redmine_dmsf) +
-        "\n".html_safe + javascript_include_tag('select2.min.js', :plugin => :redmine_dmsf, defer: true) +
-        "\n".html_safe + javascript_include_tag('redmine_dmsf.js', :plugin => :redmine_dmsf, defer: true) +
-        "\n".html_safe + javascript_include_tag('attachments_dmsf.js', :plugin => :redmine_dmsf, defer: true)
-      end
-
-      def easy_extensions_javascripts_hook(context={})
-        context[:template].require_asset('select2.min.js')
-        context[:template].require_asset('redmine_dmsf.js')
-        context[:template].require_asset('attachments_dmsf.js')
-      end
-
-      def easy_extensions_stylesheets_hook(context={})
-        context[:template].require_asset('redmine_dmsf.css')
-        context[:template].require_asset('select2.min.css')
+        return unless /^(Dmsf|Projects|Issues|Queries|EasyCrmCases)/.match?(context[:controller].class.name)
+        meta = "\n".html_safe + stylesheet_link_tag('redmine_dmsf.css', plugin: :redmine_dmsf) +
+        "\n".html_safe + stylesheet_link_tag('select2.min.css', plugin: :redmine_dmsf) +
+        "\n".html_safe + javascript_include_tag('select2.min.js', plugin: :redmine_dmsf, defer: true) +
+        "\n".html_safe + javascript_include_tag('redmine_dmsf.js', plugin: :redmine_dmsf, defer: true) +
+        "\n".html_safe + javascript_include_tag('attachments_dmsf.js', plugin: :redmine_dmsf, defer: true)
+        if defined?(EasyExtensions)
+          meta = meta + "\n".html_safe + stylesheet_link_tag('easy_extensions.css', plugin: :redmine_dmsf)
+        end
+        meta
       end
 
     end

@@ -23,95 +23,88 @@ require File.expand_path('../../test_helper', __FILE__)
 
 class DmsfFilesControllerTest < RedmineDmsf::Test::TestCase 
   
-  fixtures :users, :email_addresses, :dmsf_files, :dmsf_file_revisions, 
-    :custom_fields, :custom_values, :projects, :roles, :members, :member_roles, 
-    :enabled_modules, :dmsf_file_revisions
+  fixtures :dmsf_folders, :dmsf_files, :dmsf_file_revisions, :dmsf_locks
 
   def setup
-    @project = Project.find 1
-    @project.enable_module! :dmsf    
-    @file = DmsfFile.find 1
-    @role = Role.find 1
-    User.current = nil
-    @request.session[:user_id] = 2
-    @dmsf_storage_directory = Setting.plugin_redmine_dmsf['dmsf_storage_directory']
-    Setting.plugin_redmine_dmsf['dmsf_storage_directory'] = 'files/dmsf'
-    FileUtils.cp_r File.join(File.expand_path('../../fixtures/files', __FILE__), '.'), DmsfFile.storage_path
-  end
-
-  def teardown
-    # Delete our tmp folder
-    begin
-      FileUtils.rm_rf DmsfFile.storage_path
-    rescue => e
-      error e.message
-    end
-    Setting.plugin_redmine_dmsf['dmsf_storage_directory'] = @dmsf_storage_directory
-  end
-  
-  def test_truth
-    assert_kind_of Project, @project
-    assert_kind_of DmsfFile, @file
-    assert_kind_of Role, @role
+    super
+    @request.session[:user_id] = @jsmith.id
   end
 
   def test_show_file_ok
     # Permissions OK
-    @role.add_permission! :view_dmsf_files
-    get :show, :params => {:id => @file.id}
+    get :show, params: { id: @file1.id }
     assert_response :success
+  end
+
+  def test_show_formatting_html
+    Setting.text_formatting = 'HTML'
+    get :show, params: { id: @file1.id }
+    assert_response :success
+    assert_include 'dmsf-description', response.body, 'dmsf-description class not found'
+    assert_not_include 'wiki-edit', response.body, 'wiki-edit class found'
+  end
+
+  def test_show_formatting_textile
+    Setting.text_formatting = 'Textile'
+    get :show, params: { id: @file1.id }
+    assert_response :success
+    assert_not_include 'dmsf-description', response.body, 'dmsf-description class found'
+    assert_include 'wiki-edit', response.body, 'wiki-edit class not found'
   end
 
   def test_show_file_forbidden
     # Missing permissions
-    get :show, :params => {:id => @file.id}
+    @role_manager.remove_permission! :view_dmsf_files
+    get :show, params: { id: @file1.id }
     assert_response :forbidden
   end
-  
+
   def test_view_file_ok
     # Permissions OK
-    @role.add_permission! :view_dmsf_files    
-    get :view, :params => {:id => @file.id}
+    get :view, params: { id: @file1.id }
     assert_response :success
   end
-      
+
   def test_view_file_forbidden
     # Missing permissions
-    get :view, :params => {:id => @file.id}
+    @role_manager.remove_permission! :view_dmsf_files
+    get :view, params: { id: @file1.id }
     assert_response :forbidden
   end
 
   def delete_forbidden
     # Missing permissions
-    delete @file, :params => {:commit => false}
+    @role_manager.remove_permission! :file_manipulation
+    delete :delete, params: { id: @file1, folder_id: @file1.dmsf_folder, commit: false }
     assert_response :forbidden
   end
 
   def delete_locked
     # Permissions OK but the file is locked
-    @role.add_permission! :file_delete
-    delete @file, params: { commit: false }
+    delete :delete, params: { id: @file2, folder_id: @file2.dmsf_folder, commit: false }
     assert_response :redirect
     assert_include l(:error_file_is_locked), flash[:error]
   end
 
   def delete_ok
     # Permissions OK and not locked
-    flash[:error].clear
-    @file.unlock!
-    delete @file, params: { commit: false }
-    assert_response :redirect
-    assert_equal 0, flash[:error].size
+    delete :delete, params: { id: @file1, folder_id: @file1.dmsf_folder, commit: false }
+    assert_redirected_to dmsf_folder_path(id: @file1.project, folder_id: @file1.dmsf_folder)
+  end
+
+  def test_delete_in_subfolder
+    delete :delete, params: { id: @file4, folder_id: @file4.dmsf_folder, commit: false }
+    assert_redirected_to dmsf_folder_path(id: @file4.project, folder_id: @file4.dmsf_folder)
   end
 
   def test_obsolete_revision_ok
-    @role.add_permission! :file_manipulation
-    get :obsolete_revision, :params => {:id => @file.last_revision.id}
-    assert_redirected_to :action => 'show', :id => @file
+    get :obsolete_revision, params: { id: @file1.last_revision.id }
+    assert_redirected_to action: 'show', id: @file1
   end
 
   def test_obsolete_revision_missing_permissions
-    get :obsolete_revision, :params => {:id => @file.last_revision.id}
+    @role_manager.remove_permission! :file_manipulation
+    get :obsolete_revision, params: { id: @file1.last_revision.id }
     assert :forbiden
   end
   

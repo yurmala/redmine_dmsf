@@ -39,8 +39,7 @@ module RedmineDmsf
       def save_dmsf_attachments(dmsf_attachments)
         @saved_dmsf_attachments = []
         if dmsf_attachments
-          dmsf_attachments = dmsf_attachments.map(&:last)
-          dmsf_attachments.each do |dmsf_attachment|
+          dmsf_attachments.each do |_, dmsf_attachment|
             a = Attachment.find_by_token(dmsf_attachment[:token])
             @saved_dmsf_attachments << a if a
           end
@@ -54,8 +53,7 @@ module RedmineDmsf
       def save_dmsf_links(dmsf_links)
         @saved_dmsf_links = []
         if dmsf_links
-          ids = dmsf_links.map(&:last)
-          ids.each do |id|
+          dmsf_links.each do |_, id|
             l = DmsfLink.find_by(id: id)
             @saved_dmsf_links << l if l
           end
@@ -110,7 +108,7 @@ module RedmineDmsf
           parent.save
         end
         if parent
-          folder = DmsfFolder.system.where(["project_id = ? AND dmsf_folder_id = ? AND title LIKE '? - %'",
+          folder = DmsfFolder.issystem.where(["project_id = ? AND dmsf_folder_id = ? AND title LIKE '? - %'",
             self.project_id, parent.id, self.id]).first
           if create && !folder
             folder = DmsfFolder.new
@@ -149,24 +147,20 @@ module RedmineDmsf
       end
 
       def dmsf_file_added(dmsf_file)
-        unless dmsf_file.new_record?
-          self.journalize_dmsf_file(dmsf_file, :added)
-        end
+        self.journalize_dmsf_file dmsf_file, :added
       end
 
       def dmsf_file_removed(dmsf_file)
-        unless dmsf_file.new_record?
-          self.journalize_dmsf_file(dmsf_file, :removed)
-        end
+        self.journalize_dmsf_file dmsf_file, :removed
       end
 
       # Adds a journal detail for an attachment that was added or removed
       def journalize_dmsf_file(dmsf_file, added_or_removed)
-        init_journal(User.current)
         key = (added_or_removed == :removed ? :old_value : :value)
+        init_journal(User.current)
         current_journal.details << JournalDetail.new(
-          :property => 'dmsf_file',
-          :prop_key => dmsf_file.id,
+          property: 'dmsf_file',
+          prop_key: dmsf_file.id,
           key => dmsf_file.title
         )
         current_journal.save

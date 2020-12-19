@@ -24,18 +24,6 @@ require File.expand_path('../../../test_helper', __FILE__)
 
 class DmsfWebdavPostTest < RedmineDmsf::Test::IntegrationTest
 
-  fixtures :users, :email_addresses
-
-  def setup
-    @admin = credentials 'admin'
-    @dmsf_webdav = Setting.plugin_redmine_dmsf['dmsf_webdav']
-    Setting.plugin_redmine_dmsf['dmsf_webdav'] = true
-  end
-
-  def teardown
-    Setting.plugin_redmine_dmsf['dmsf_webdav'] = @dmsf_webdav
-  end
-  
   # Test that any post request is authenticated
   def test_post_request_authenticated
     post '/dmsf/webdav/'
@@ -44,7 +32,7 @@ class DmsfWebdavPostTest < RedmineDmsf::Test::IntegrationTest
 
   # Test post is not implemented
   def test_post_not_implemented
-    post '/dmsf/webdav/', :params => nil, :headers => @admin
+    post '/dmsf/webdav/', params: nil, headers: @admin
     assert_response :not_implemented
   end
   

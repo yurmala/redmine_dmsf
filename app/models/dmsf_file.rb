@@ -36,15 +36,15 @@ class DmsfFile < ActiveRecord::Base
 
   belongs_to :project
   belongs_to :dmsf_folder
-  belongs_to :deleted_by_user, :class_name => 'User', :foreign_key => 'deleted_by_user_id'
+  belongs_to :deleted_by_user, class_name: 'User', foreign_key: 'deleted_by_user_id'
 
   has_many :dmsf_file_revisions, -> { order(created_at: :desc, id: :desc) },
-           :dependent => :destroy
+           dependent: :destroy
   has_many :locks, -> { where(entity_type: 0).order(updated_at: :desc) },
-    :class_name => 'DmsfLock', :foreign_key => 'entity_id', :dependent => :destroy
+    class_name: 'DmsfLock', foreign_key: 'entity_id', :dependent => :destroy
   has_many :referenced_links, -> { where target_type: DmsfFile.model_name.to_s},
-    :class_name => 'DmsfLink', :foreign_key => 'target_id', :dependent => :destroy
-  has_many :dmsf_public_urls, :dependent => :destroy
+    class_name: 'DmsfLink', foreign_key: 'target_id', dependent: :destroy
+  has_many :dmsf_public_urls, dependent: :destroy
 
   STATUS_DELETED = 1
   STATUS_ACTIVE = 0
@@ -54,11 +54,11 @@ class DmsfFile < ActiveRecord::Base
 
   validates :name, presence: true, dmsf_file_name: true
   validates :project, presence: true
-  validates_uniqueness_of :name, :scope => [:dmsf_folder_id, :project_id, :deleted],
+  validates_uniqueness_of :name, scope: [:dmsf_folder_id, :project_id, :deleted],
     conditions: -> { where(deleted: STATUS_ACTIVE) }
 
-  acts_as_event :title => Proc.new { |o| o.name },
-                :description => Proc.new { |o|
+  acts_as_event title: Proc.new { |o| o.name },
+                description: Proc.new { |o|
                   desc = Redmine::Search.cache_store.fetch("DmsfFile-#{o.id}")
                   if desc
                     Redmine::Search.cache_store.delete("DmsfFile-#{o.id}")
@@ -70,13 +70,13 @@ class DmsfFile < ActiveRecord::Base
                   end
                   desc
                 },
-                :url => Proc.new { |o| {:controller => 'dmsf_files', :action => 'view', :id => o} },
-                :datetime => Proc.new { |o| o.updated_at },
-                :author => Proc.new { |o| o.last_revision.user }
+                url: Proc.new { |o| { controller: 'dmsf_files', action: 'view', id: o } },
+                datetime: Proc.new { |o| o.updated_at },
+                author: Proc.new { |o| o.last_revision.user }
 
-  acts_as_searchable :columns => ["#{table_name}.name", "#{DmsfFileRevision.table_name}.title", "#{DmsfFileRevision.table_name}.description", "#{DmsfFileRevision.table_name}.comment"],
-    :project_key => 'project_id',
-    :date_column => "#{table_name}.updated_at"
+  acts_as_searchable columns: ["#{table_name}.name", "#{DmsfFileRevision.table_name}.title", "#{DmsfFileRevision.table_name}.description", "#{DmsfFileRevision.table_name}.comment"],
+    project_key: 'project_id',
+    date_column: "#{table_name}.updated_at"
 
   before_create :default_values
 
@@ -99,18 +99,15 @@ class DmsfFile < ActiveRecord::Base
       pn = Pathname.new(path)
       return pn if pn.absolute?
     end
-    Rails.root.join(path)
+    Rails.root.join path
   end
 
   def self.find_file_by_name(project, folder, name)
-    findn_file_by_name(project.id, folder, name)
+    findn_file_by_name project&.id, folder, name
   end
 
   def self.findn_file_by_name(project_id, folder, name)
-    where(
-      project_id: project_id,
-      dmsf_folder_id: folder ? folder.id : nil,
-      name: name).visible.first
+    visible.find_by project_id: project_id, dmsf_folder_id: folder&.id, name: name
   end
 
   def last_revision
@@ -128,11 +125,21 @@ class DmsfFile < ActiveRecord::Base
     deleted == STATUS_DELETED
   end
 
-  def delete(commit)
+  def locked_by
+    if lock && lock.reverse[0]
+      user = lock.reverse[0].user
+      if user
+        return (user == User.current) ? l(:label_me) : user.name
+      end
+    end
+    ''
+  end
+
+  def delete(commit = false)
     if locked_for_user? && (!User.current.allowed_to?(:force_file_unlock, project))
       Rails.logger.info l(:error_file_is_locked)
       if lock.reverse[0].user
-        errors[:base] << l(:title_locked_by_user, :user => lock.reverse[0].user)
+        errors[:base] << l(:title_locked_by_user, user: lock.reverse[0].user)
       else
         errors[:base] << l(:error_file_is_locked)
       end
@@ -142,9 +149,6 @@ class DmsfFile < ActiveRecord::Base
       # Revisions and links of a deleted file SHOULD be deleted too
       dmsf_file_revisions.each { |r| r.delete(commit, true) }
       if commit
-        if container.is_a?(Issue)
-          container.dmsf_file_removed(self)
-        end
         destroy
       else
         self.deleted = STATUS_DELETED
@@ -233,24 +237,36 @@ class DmsfFile < ActiveRecord::Base
   def move_to(project, folder)
     if locked_for_user?
       errors[:base] << l(:error_file_is_locked)
+      Rails.logger.error l(:error_file_is_locked)
+      return false
+    end
+    unless last_revision
+      errors[:base] << l(:error_at_least_one_revision_must_be_present)
+      Rails.logger.error l(:error_at_least_one_revision_must_be_present)
       return false
     end
     source = "#{project.identifier}:#{dmsf_path_str}"
-    self.project_id = project.id
+    self.project = project
     self.dmsf_folder = folder
     new_revision = last_revision.clone
+    new_revision.workflow = nil
+    new_revision.dmsf_workflow_id = nil
+    new_revision.dmsf_workflow_assigned_by_user_id = nil
+    new_revision.dmsf_workflow_assigned_at = nil
+    new_revision.dmsf_workflow_started_by_user_id = nil
+    new_revision.dmsf_workflow_started_at = nil
     new_revision.dmsf_file = self
     new_revision.comment = l(:comment_moved_from, source: source)
     new_revision.custom_values = []
     last_revision.custom_values.each do |cv|
       new_revision.custom_values << CustomValue.new({ custom_field: cv.custom_field, value: cv.value })
     end
-    set_last_revision(new_revision)
+    set_last_revision new_revision
     save && new_revision.save
   end
 
   def copy_to(project, folder = nil)
-    copy_to_filename(project, folder, name)
+    copy_to_filename project, folder, name
   end
   
   def copy_to_filename(project, folder, filename)
@@ -278,7 +294,7 @@ class DmsfFile < ActiveRecord::Base
       if File.exist? last_revision.disk_file
         FileUtils.cp last_revision.disk_file, new_revision.disk_file(false)
       end
-      new_revision.comment = l(:comment_copied_from, :source => "#{project.identifier}: #{dmsf_path_str}")
+      new_revision.comment = l(:comment_copied_from, source: "#{project.identifier}: #{dmsf_path_str}")
       new_revision.custom_values = []
       last_revision.custom_values.each do |cv|
         v = CustomValue.new
@@ -289,6 +305,7 @@ class DmsfFile < ActiveRecord::Base
       if new_revision.save
         file.set_last_revision new_revision
       else
+        errors[:base] << new_revision.errors.full_messages.to_sentence
         Rails.logger.error new_revision.errors.full_messages.to_sentence
         file.delete(true)
         file = nil
@@ -443,9 +460,12 @@ class DmsfFile < ActiveRecord::Base
     last_revision && (Redmine::MimeType.of(last_revision.disk_filename) == 'application/pdf')
   end
 
+  def video?
+    last_revision && Redmine::MimeType.is_type?('video', last_revision.disk_filename)
+  end
 
   def disposition
-    (image? || pdf?) ? 'inline' : 'attachment'
+    (image? || pdf? || video?) ? 'inline' : 'attachment'
   end
 
   def preview(limit)
@@ -511,81 +531,6 @@ class DmsfFile < ActiveRecord::Base
     File.extname(last_revision.disk_filename).strip.downcase[1..-1] if last_revision
   end
 
-  include ActionView::Helpers::NumberHelper
-  include Rails.application.routes.url_helpers
-
-  def to_csv(columns, level)
-    csv = []
-    # Project
-    csv << project.name if columns.include?(l(:field_project))
-    # Id
-    csv << id if columns.include?('id')
-    # Title
-    csv << title.insert(0, '  ' * level) if columns.include?('title')
-    # Extension
-    csv << extension if columns.include?('extension')
-    # Size
-    csv << number_to_human_size(last_revision.size) if columns.include?('size')
-    # Modified
-    if columns.include?('modified')
-      if last_revision
-        csv << format_time(last_revision.updated_at)
-      else
-        csv << ''
-      end
-    end
-    # Version
-    if columns.include?('version')
-      if last_revision
-        csv << last_revision.version
-      else
-        csv << ''
-      end
-    end
-    # Workflow
-    if columns.include?('workflow')
-      if last_revision
-        csv << last_revision.workflow_str(false)
-      else
-        csv << ''
-      end
-    end
-    # Author
-    if columns.include?('author')
-      if last_revision && last_revision.user
-        csv << last_revision.user.name
-      else
-        csv << ''
-      end
-    end
-    # Last approver
-    if columns.include?(l(:label_last_approver))
-      if last_revision && last_revision.dmsf_workflow
-        csv << last_revision.workflow_tooltip
-      else
-        csv << ''
-      end
-    end
-    # Url
-    if columns.include?(l(:label_document_url))
-      default_url_options[:host] = Setting.host_name
-      csv << url_for(:controller => :dmsf_files, :action => 'view', :id => id)
-    end
-    # Revision
-    if columns.include?(l(:label_last_revision_id))
-      if last_revision
-        csv << last_revision.id
-      else
-        csv << ''
-      end
-    end
-    # Custom fields
-    CustomField.where(type: 'DmsfFileRevisionCustomField').order(:position).each do |c|
-      csv << custom_value(c).value if columns.include?(c.name)
-    end
-    csv
-  end
-
   def thumbnail(options={})
     if image?
       size = options[:size].to_i
@@ -612,21 +557,12 @@ class DmsfFile < ActiveRecord::Base
   def get_locked_title
     if locked_for_user?
       if lock.reverse[0].user
-        return l(:title_locked_by_user, :user => lock.reverse[0].user)
+        return l(:title_locked_by_user, user: lock.reverse[0].user)
       else
         return l(:notice_account_unknown_email)
       end
     end
     l(:title_unlock_file)
-  end
-
-  def container
-    unless @container
-      if dmsf_folder && dmsf_folder.system
-        @container = Issue.find_by(id: dmsf_folder.title.to_i)
-      end
-    end
-    @container
   end
 
 end

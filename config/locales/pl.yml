@@ -40,7 +40,6 @@ pl:
   error_folder_creation_failed: Błąd podczas tworzenia folderu
   error_folder_title_must_be_entered: Musisz podać tytuł
   notice_folder_deleted: Folder został usunięty
-  error_folder_is_not_empty: Folder zawiera pliki
   error_folder_title_is_already_used: Podany tytuł jest już w użyciu
   notice_folder_details_were_saved: Szczegóły folderu zostały zapisane
   error_folder_is_locked: Folder jest zablokowany
@@ -67,7 +66,6 @@ pl:
   notice_file_notifications_deactivated: Wyłączono powiadomienia dla pliku
   link_details: "szczegóły %{title}"
   link_edit: "Edytuj %{title}"
-  submit_create: Utwórz
   link_create_folder: Utwórz folder
   link_title: Tytuł
   link_size: Rozmiar
@@ -77,12 +75,10 @@ pl:
   title_check_for_zip_download_or_email: Zaznacz aby pobrać plik zip lub wysłać email
   title_check_for_restore_or_delete: Check for restore or delete
 
-  title_delete: Usuń
   title_notifications_active_deactivate: "Powiadomienia aktywne: Wyłącz"
   title_notifications_not_active_activate: "Powiadomienia wyłączone: Aktywuj"
   title_title_version_version_download: "pobierz %{title} wersja %{version}"
   title_locked_by_user: "Zablokowany przez %{user}"
-  title_locked_by_you: Zablokowany przez Ciebie
   title_waiting_for_approval: Oczekiwanie na akceptację
   title_approved: Zaakceptowany
   title_unlock_file: Odblokuj aby umożliwić wprowadzanie zmian innym użytkownikom
@@ -129,9 +125,6 @@ pl:
   option_version_major: Major
   option_version_custom: Custom
   label_new_content: Nowa zawartość
-  label_maximum_files_upload: Maximum files upload
-  note_maximum_number_of_files_uploaded: Maksymalna liczba jednocześnie przesyłanych plików. 0 oznacza brak ograniczeń.
-
   label_maximum_files_download: Maksymalna liczba jednocześnie pobieranych plików
   note_maximum_number_of_files_downloaded: Maksymalna liczba plików pobieranych w paczce zip lub wysyłanych przez email.
     0 oznacza brak ograniczeń.
@@ -151,7 +144,6 @@ pl:
     with 'Z', STEM_ALL - Search for stemmed forms of all words (note: no 'Z' prefix is added)."
   label_default_notifications: Domyślne powiadomienia plików
   heading_uploaded_files: Przesłane pliki
-  submit_commit: Zatwierdź
   link_documents: Dokumenty
   permission_view_dmsf_file_revision_accesses: View downloads in Activity stream
   permission_view_dmsf_file_revisions: View revisions in Activity stream
@@ -248,7 +240,6 @@ pl:
   label_dmsf_workflow_plural_num: Procesy akceptacji (%{count})
   label_dmsf_workflow_step: Krok
   label_dmsf_workflow_step_plural: Kroki
-  label_dmsf_workflow_approval: Akceptacja
   label_dmsf_workflow_approval_plural: Akceptacje
   label_dmsf_wokflow_action_approve: Zaakceptuj
   label_dmsf_wokflow_action_reject: Odrzuć
@@ -344,18 +335,10 @@ pl:
   error_lock_exclusively: Unable to lock exclusively an already-locked resource
   error_unlock_parent_locked: Unlock failed - resource parent is locked
 
-  field_dmsf_tree_view: Navigate folders in a tree
   label_dmsf_version: Wersja
 
   locked_documents: Dokumenty zablokowane
   open_approvals: Otwarte procesy akceptacji
-
-  label_maximum_ajax_upload_filesize: Maximum file size uploadable via AJAX
-  note_maximum_ajax_upload_filesize: Limits maximum file size that can uploaded via standard AJAX interface otherwise
-    Redmine standard upload form must be used. Number is in MB.
-
-  label_classic: Classic
-  label_drag_drop: Modern
 
   error_maximum_upload_filecount: "No more than %{filecount} file(s) can be uploaded."
 
@@ -411,7 +394,22 @@ pl:
   text_dmsf_fast_links_info: You will be able to manually enter a target folder's ID when creating links in order to speed
     up the process of creating links.
 
-  label_inherited_permissions: Inherited permissions
+  label_dmsf_permissions: Allow access only to
+  label_inherited_permissions: Inherited Access for
+
+  button_edit_content: Edit content
+  field_workflow: Workflow
+  field_modified: Date
+  field_updated: Date
+  field_count: D/L
+  field_first_at: First
+  field_last_at: Last
+  field_size: Size
+
+  label_add_width: Add with
+
+  dmsf_webdav_ignore_1b_file_for_authentication: Ignore 1b file sent for authentication
+  dmsf_webdav_ignore_1b_file_for_authentication_info: Total Commander WebDAV plugin
 
   easy_pages:
     modules:

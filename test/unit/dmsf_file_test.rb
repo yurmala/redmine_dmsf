@@ -23,51 +23,19 @@
 require File.expand_path('../../test_helper', __FILE__)
 
 class DmsfFileTest < RedmineDmsf::Test::UnitTest
-  fixtures :projects, :users, :email_addresses, :dmsf_folders, :dmsf_files, :dmsf_file_revisions, :roles,
-           :members, :member_roles, :dmsf_locks, :issues, :dmsf_links, :dmsf_workflows, :dmsf_workflow_steps,
-           :dmsf_workflow_step_assignments
+
+  fixtures :dmsf_locks, :issues, :dmsf_links, :dmsf_workflows, :dmsf_workflow_steps,
+           :dmsf_workflow_step_assignments, :dmsf_folders, :dmsf_files, :dmsf_file_revisions
 
   def setup
-    @admin = User.find 1
-    @jsmith = User.find 2
-    @project1 = Project.find 1
-    @project2 = Project.find 2
-    @file1 = DmsfFile.find 1
-    @file2 = DmsfFile.find 2
-    @file3 = DmsfFile.find 3
-    @file4 = DmsfFile.find 4
-    @file5 = DmsfFile.find 5
-    @file6 = DmsfFile.find 6
-    @file7 = DmsfFile.find 7
-    @file8 = DmsfFile.find 8
-    @folder1 = DmsfFolder.find 1
+    super
     @issue1 = Issue.find 1
     @wf1 = DmsfWorkflow.find 1
     @wf2 = DmsfWorkflow.find 2
-    User.current = nil
-  end
-
-  def test_truth
-    assert_kind_of User, @admin
-    assert_kind_of User, @jsmith
-    assert_kind_of Project, @project1
-    assert_kind_of Project, @project2
-    assert_kind_of DmsfFile, @file1
-    assert_kind_of DmsfFile, @file2
-    assert_kind_of DmsfFile, @file3
-    assert_kind_of DmsfFile, @file4
-    assert_kind_of DmsfFile, @file5
-    assert_kind_of DmsfFile, @file6
-    assert_kind_of DmsfFile, @file7
-    assert_kind_of DmsfFile, @file8
-    assert_kind_of DmsfFolder, @folder1
-    assert_kind_of Issue, @issue1
-    assert_kind_of DmsfWorkflow, @wf1
-    assert_kind_of DmsfWorkflow, @wf2
   end
 
   def test_project_file_count_differs_from_project_visibility_count
-    assert_not_same(@project1.dmsf_files.all.size, @project1.dmsf_files.visible.all.size)
+    assert_not_same @project1.dmsf_files.all.size, @project1.dmsf_files.visible.all.size
   end
 
   def test_project_dmsf_file_listing_contains_deleted_items
@@ -94,20 +62,12 @@ class DmsfFileTest < RedmineDmsf::Test::UnitTest
 
   def test_file_locked_is_not_locked_for_user_who_locked
     User.current = @admin
-    @file1.lock!
-    assert !@file1.locked_for_user?,
-      "#{@file1.name} is locked for #{User.current}"
-    @file1.unlock!
+    assert !@file2.locked_for_user?, "#{@file2.name} is locked for #{User.current}"
   end
 
   def test_file_locked_is_locked_for_user_who_didnt_lock
-    User.current = @admin
-    @file1.lock!
     User.current = @jsmith
-    assert @file1.locked_for_user?,
-      "#{@file1.name} is locked for #{User.current}"
-    User.current = @admin
-    @file1.unlock!
+    assert @file2.locked_for_user?, "#{@file1.name} is locked for #{User.current}"
   end
 
   def test_file_with_no_locks_reported_unlocked
@@ -127,7 +87,6 @@ class DmsfFileTest < RedmineDmsf::Test::UnitTest
     assert_equal 0, @file4.dmsf_file_revisions.visible.all.size
     # Links should not be deleted
     assert_equal 2, @file4.referenced_links.visible.all.size
-    @file4.dmsf_folder.lock!
   end
 
   def test_restore
@@ -138,7 +97,6 @@ class DmsfFileTest < RedmineDmsf::Test::UnitTest
     assert !@file4.deleted?, "File #{@file4} hasn't been restored"
     assert_equal 1, @file4.dmsf_file_revisions.visible.all.size
     assert_equal 2, @file4.referenced_links.visible.all.size
-    @file4.dmsf_folder.lock!
   end
 
   def test_destroy
@@ -149,7 +107,6 @@ class DmsfFileTest < RedmineDmsf::Test::UnitTest
     @file4.delete true
     assert_equal 0, @file4.dmsf_file_revisions.all.size
     assert_equal 0, @file4.referenced_links.all.size
-    @file4.dmsf_folder.lock!
   end
 
   def test_copy_to_filename
@@ -229,9 +186,15 @@ class DmsfFileTest < RedmineDmsf::Test::UnitTest
   end
 
   def test_disposition
+    # Text
     assert_equal 'attachment', @file1.disposition
+    # Image
     assert_equal 'inline', @file7.disposition
+    # PDF
     assert_equal 'inline', @file8.disposition
+    # Video
+    @file1.last_revision.disk_filename = 'test.mp4'
+    assert_equal 'inline', @file1.disposition
   end
 
   def test_image
@@ -252,17 +215,17 @@ class DmsfFileTest < RedmineDmsf::Test::UnitTest
     assert @file8.pdf?
   end
 
+  def test_video
+    assert !@file1.video?
+    @file1.last_revision.disk_filename = 'test.mp4'
+    assert @file1.video?
+  end
+
   def test_findn_file_by_name
     assert DmsfFile.find_file_by_name(@project1, nil, 'test.txt')
     assert_nil DmsfFile.find_file_by_name(@project1, nil, 'test.odt')
     assert DmsfFile.find_file_by_name(@issue1, nil, 'test.pdf')
     assert_nil DmsfFile.find_file_by_name(@issue1, nil, 'test.odt')
-  end
-
-  def test_to_csv
-    columns = %w(id title)
-    csv = @file1.to_csv(columns, 0)
-    assert_equal 2, csv.size
   end
 
   def test_storage_path
@@ -291,10 +254,17 @@ class DmsfFileTest < RedmineDmsf::Test::UnitTest
   def test_assigned
     assert !@file1.assigned?(@admin)
     assert !@file1.assigned?(@jsmith)
-    @file7.last_revision.set_workflow(@wf1.id, nil)
-    @file7.last_revision.assign_workflow(@wf1.id)
+    @file7.last_revision.set_workflow @wf1.id, nil
+    @file7.last_revision.assign_workflow @wf1.id
     assert @file7.assigned?(@admin)
     assert @file7.assigned?(@jsmith)
+  end
+
+  def test_locked_by
+    # Locked file
+    assert_equal @admin.name, @file2.locked_by
+    # Unlocked file
+    assert_equal '', @file1.locked_by
   end
 
 end
